@@ -5,3 +5,5 @@ output/
 models/
 logs/
 latex_output/
+*copy*
+*test*

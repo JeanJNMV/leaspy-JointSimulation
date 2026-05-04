@@ -1,0 +1,1 @@
+The code used during my internship at Paris Brain Institut - INRIA ARAMIS Laboratory on the software [leaspy](https://github.com/aramis-lab/leaspy).

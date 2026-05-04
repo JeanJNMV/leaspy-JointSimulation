@@ -47,9 +47,9 @@
 \pagestyle{fancy}
 \fancyheadoffset{0.5cm}
 
-
+\lhead{}
 \rhead{\nouppercase{\leftmark}}
-\rfoot{\thepage}
+\lfoot{\trigrammemention}
 
 }
 
@@ -114,19 +114,7 @@
 \newpage
 }
 
-\newcommand{\tabledematieres}{
-\tableofcontents
-\newpage
-}
 
-\newcommand{\insererfigure}[4]{
-\begin{figure}[ht]
-\centering
-\includegraphics[height=#2]{#1}
-\caption{#3}
-\label{fig: #4}
-\end{figure}
-}
 
 
 

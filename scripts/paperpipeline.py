@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import torch
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 from scipy.stats import pearsonr, beta as _beta_dist
 
 from leaspy.io.data import Data
@@ -108,7 +107,7 @@ else:
     # e.g. N=50 -> 2 digits: "00","01",...,"49" (avoids "0","1","10","11",... ordering)
     _n_digits = len(str(N - 1))
 
-    for m in tqdm(range(M), desc="Simulation study"):
+    for m in range(M):
 
         # Simulate a dataset with the reference model
         np.random.seed(m)

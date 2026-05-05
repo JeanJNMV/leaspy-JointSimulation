@@ -62,7 +62,7 @@
 \centering %Centraliser le contenu
 
 % Logo Entreprise x ecole
-\begin{figure}
+\begin{figure*}
     \begin{subfigure}{.33\textwidth}
         \centering
         \includegraphics[width=0.8\textwidth]{\logoentreprise}\par\vspace{1cm}
@@ -75,7 +75,7 @@
         \centering
         \includegraphics[width=0.8\textwidth]{logos/logoMVA.jpg}\par\vspace{1cm}
     \end{subfigure}
-\end{figure}
+\end{figure*}
 
 % Titre du rapport
 \rule{\linewidth}{0.2 mm} \\[0.4 cm]

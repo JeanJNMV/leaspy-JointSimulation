@@ -5,5 +5,7 @@ output/
 models/
 logs/
 latex_output/
+err/
+out/
 *copy*
 *test*

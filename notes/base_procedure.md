@@ -1,15 +1,4 @@
-## 3.1 Method
-
-For the simulation study we followed the ADEMP recommendation ([Morris et al., 2019]) and got inspiration
-from the work of ([Lavalley-Morelle et al., 2024]) also using MCMC-SAEM estimator.
-
-### 3.1.1 Aims
-
-The simulation study aimed to validate the Joint Temporal model. For model parameters (θ), we evaluate
-the estimation of the model parameters associated with their standard error. For random effects, we assessed
-the correlation between the estimated values and the simulated ones.
-
-### 3.1.2 Data-generating mechanism
+# Original Data-generating mechanism
 
 Data were simulated under the Joint Temporal model structure with the following procedure:
 
@@ -20,39 +9,28 @@ Data were simulated under the Joint Temporal model structure with the following 
 5. For each patient, we simulated the event $T_{e_i}$ through a Weibull distribution using $T_{e_i} \sim e^{-\xi_i}W(\nu, \rho) + \tau_i$.
 6. We considered that the event stopped the follow-up and that the follow-up censored the event. Thus all the visits after the event were censored: $t_{i,j} > T_{e_i}$ and events after the last visit were censored: $t_{i,\max(j)} < T_{e_i}$.
 
-We simulated ALS real-like data using an ALS dataset, PRO-ACT, described in part 4.1.1, to get
-real-like values for parameters. Note that some parameters values were adjusted, such as the population
-estimated reference time, to make sure that no patient was left censored (Table 4 in appendix). Parameters
-directly associated with the disease have been extracted from data analysis, using the Longitudinal and AFT
-models (Figures 4, 5 in appendix). We simulated M=100 datasets with N=200 patients. The parameters
-used for the simulation study are summarised in Table 4 in appendix.
+# Actual Implemented Procedure 
 
-### 3.1.3 Estimands
+The procedure above is faithful to the model generative story, but generates many patients with only one visit and a follow-up duration of exactly zero: if the Weibull event time $T_{e_i}$ falls before the first planned visit $t_{i,0}$, step 6 removes all visits, leaving the patient with at most a single data point. This mechanically inflates the mass near zero follow-up.
 
-We initialised the Joint Temporal model with the Longitudinal model trained for 2,000 iterations and a
-survival Weibull model. Then, we ran the Joint Temporal model with 70,000 iterations (on average an hour)
-with the last 10,000 of the Robbins-Monro convergence phase ([Robbins and Monro, 1951]) to extract the
-mean of the posterior.
+To remove this artefact while keeping the same marginal distributions, the implementation reverses the order in which the event and the visit schedule are constructed:
 
-We validated the estimation of the model parameters $\theta = \{\sigma_\xi, \sigma_\tau, t_0, \tilde{g}, \tilde{v_0}, \tilde{\nu}, \tilde{\rho}, \sigma\}$ extracted by
-the Robbins-Monro convergence phase. As we use a Gaussian approximation for the noise, we estimated $\sigma$
-using the noisy simulation and the expected perfect curve from the random effect used for simulation. For
-the random effects $(\tau_i, \xi_i)$, to reduce the computation complexity, we extracted the mean of the last 10,000
-iterations for each individual.
+1. **Sample individual parameters** as before: $\xi_i \sim \mathcal{N}(0, \sigma^2_\xi)$ and $\tau_i \sim \mathcal{N}(t_0, \sigma^2_\tau)$.
 
-### 3.1.4 Performance metrics
+2. **Sample the event time first**, before any visit is placed. For each competing event $k$, draw
+$$T_{e_i}^{(k)} \sim e^{-\xi_i} W(\nu_k, \rho_k) + \tau_i,$$
+and take the first-occurring event: $T_{e_i} = \min_k T_{e_i}^{(k)}$.
 
-To assess the estimation performances of the estimated model parameters ($\hat{\theta}$) over the M datasets simulated
-for the scenario, we reported:
+3. **Sample the study window independently** of the event:
+   - First-visit offset: $\delta_{f_i} \sim \mathcal{N}(\bar{\delta}_f, \sigma^2_{\delta_f})$.
+   - Follow-up duration: $T_{f_i} \sim |\mathcal{N}(\bar{T}_f, \sigma^2_{T_f})|$ (absolute value to ensure positivity).
+   - Natural study-end: $S_i = \tau_i + \delta_{f_i} + T_{f_i}$.
 
-- the Relative Bias: $RB(\hat{\theta}) = \frac{1}{M}\sum_{m=1}^{M}\frac{\hat{\theta}^{(m)}-\theta}{\theta} \times 100$
-- Relative Root Mean Square Errors: $RRMSE(\hat{\theta}) = \sqrt{\frac{1}{M}\sum_{m=1}^{M}\left(\frac{\hat{\theta}^{(m)}-\theta}{\theta} \times 100\right)^2}$
-- Relative Estimation Errors: $REE(m) = \frac{\hat{\theta}^{(m)}-\theta}{\theta} \times 100$
+4. **Set the anchor** as the end of the effective observation window:
+$$A_i = \begin{cases} T_{e_i} & \text{if } T_{e_i} \leq S_i \quad \text{(event observed)}, \\ S_i & \text{if } T_{e_i} > S_i \quad \text{(event censored)}. \end{cases}$$
 
-To assess the Standard Error of the estimated model parameters ($\hat{\theta}$), we reported:
+5. **Build the visit schedule forward from** $A_i - T_{f_i}$: starting at $t_{i,0} = A_i - T_{f_i}$, successive inter-visit gaps $\delta v_{i,j} \sim \mathcal{N}(\bar{\delta}_v, \sigma^2_{\delta_v})$ are added until the next visit would exceed $A_i$. Only visits $t_{i,j} \leq A_i$ are retained.
 
-- the relative empirical Standard Error: $SE_{emp}(\hat{\theta}) = \sqrt{\frac{\sum_{m=1}^{M}(\hat{\theta}^{(m)}-\bar{\hat{\theta}})^2}{m-1}}$, $RSE_{emp}(\hat{\theta}) = \frac{SE_{emp}(\hat{\theta})}{\bar{\hat{\theta}}}$
-- the coverage rates (CR): defined as the proportion of datasets for which $\theta$ belonged to $[\hat{\theta}-1.96SE(\hat{\theta}),\hat{\theta}+1.96SE(\hat{\theta})]$ with their 95% confidence intervals (CI) computed using the exact Clopper Pearson method.
+6. **Set longitudinal outcomes** as before with beta-distributed noise around the model trajectory $\psi_i(t_{i,j})$.
 
-The estimation of the random effects $(\tau_i, \xi_i)$ was assessed using the intraclass correlation between the mean
-of each individual and the true value that enabled the simulation.
+**Why this solves the peaks-at-0 problem.** In the original procedure, a very early event time $T_{e_i}$ wipes out the entire visit schedule built in step 3, producing patients with zero follow-up. In the anchor-based procedure, the visit window is constructed *relative to the anchor*, so its duration is always $T_{f_i}$ regardless of whether the event is early or late. Every patient therefore has at least one baseline visit and a follow-up spread over $T_{f_i}$ years, which matches the empirical distribution of the training cohort far more closely.

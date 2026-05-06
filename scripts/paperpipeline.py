@@ -1,5 +1,7 @@
 # # Paper's Pipeline
 
+print("Starting simulation study pipeline")
+
 import os
 import pickle
 import warnings
@@ -62,6 +64,8 @@ visit_params = {
     "distance_visit_std":  0.042,
     "min_spacing_between_visits": 0.05,
 }
+
+print("Loading reference model to get true parameters theta")
 
 # Fit reference model on original data to get "true" parameters theta
 REF_MODEL_PATH = Path(

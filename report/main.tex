@@ -100,7 +100,7 @@ Because this integral is intractable in closed form, Leaspy employs the MCMC-SAE
 
 A key innovation of Leaspy is the interpretation of disease progression within a Riemannian geometric framework~\cite{schiratti2017bayesian}. The core idea is to represent the multivariate progression of clinical markers as a geodesic on a product Riemannian manifold, where the shape of the curve is entirely determined by the choice of the metric $G(p)$. 
 
-For clinical scores exhibiting floor or ceiling effects—common in neurodegenerative disease assessment, the manifold $(0,1)$ equipped with the metric $G(p) = 1/[p^2(1-p)^2]$ yields logistic (sigmoidal) trajectories. This metric encapsulates the bounded nature of the scores in a geometrically principled way. More generally, the Euclidean metric on $\mathbb{R}^n$ yields linear trajectories, allowing the framework to accommodate diverse data types.
+For clinical scores exhibiting floor or ceiling effects, common in neurodegenerative disease assessment, the manifold $(0,1)$ equipped with the metric $G(p) = 1/[p^2(1-p)^2]$ yields logistic (sigmoidal) trajectories. This metric encapsulates the bounded nature of the scores in a geometrically principled way. More generally, the Euclidean metric on $\mathbb{R}^n$ yields linear trajectories, allowing the framework to accommodate diverse data types.
 
 The average population trajectory $\gamma_0$ is a geodesic parameterized by its initial conditions at reference time $t_0$: initial position $p_0 = \gamma_0(t_0)$ and initial speed $v_0 = \dot{\gamma}_0(t_0)$. Individual trajectories $\gamma_i(t)$ are derived from this average through three types of random effects:
 
@@ -145,9 +145,7 @@ Leaspy comes with a built-in Parkinson's disease dataset, enabling out-of-the-bo
   \includegraphics[width=0.41\textwidth]{figures/avg_example.png}
   \hfill
   \includegraphics[width=0.48\textwidth]{figures/obs_example.png}
-  \caption{Disease progression modeling with Leaspy on the built-in Parkinson's dataset.
-    (a)~Average population trajectory of clinical scores over the estimated disease timeline.
-    (b)~Personalized trajectory (solid line) and observed visits (dots) for one patient.}
+  \caption{Disease progression modeling with Leaspy on the built-in Parkinson's dataset. \textbf{Left:} Average population trajectory of clinical scores over the estimated disease timeline. \textbf{Right:} Personalized trajectory (solid line) and observed visits (dots) for one patient.}
   \label{fig:parkinson}
 \end{figure}
 \vspace*{-0.2cm}

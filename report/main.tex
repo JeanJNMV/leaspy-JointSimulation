@@ -4,6 +4,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{enumitem}
+\setlength{\marginparwidth}{2cm}
 \usepackage{todonotes}
 \setlist[itemize]{topsep=0pt, itemsep=0pt}
 
@@ -186,7 +187,8 @@ The joint log-likelihood decomposes additively into longitudinal and survival da
 
 \subsection{The Joint Simulation Algorithm}
 
-\paragraph{The original simulation algorithm.}
+\subsubsection{The Original Simulation Algorithm}
+
 In the original article describing the joint model~\cite{ortholand2025joint}, the simulation of synthetic patient cohorts under the joint model proceeds in six sequential steps, described below. This procedure generalizes the simulation workflow available in Leaspy for the logistic model to the joint setting.
 
 \begin{enumerate}
@@ -201,12 +203,12 @@ In the original article describing the joint model~\cite{ortholand2025joint}, th
 
 \noindent The simulation algorithm relies on two disjoint sets of parameters. The model parameters, read directly from the fitted joint model, are: the population distributions of the individual random effects ($t_0$, $\sigma_\tau$, $\sigma_\xi$), the Weibull survival parameters ($\nu$, $\rho$), and the source-to-survival mixing weights $\zeta$ whenever the model includes latent sources. These parameters are set once and for all during model fitting and are not accessible to the user at simulation time. The study parameters, supplied by the user, govern the structure of the synthetic cohort: the number of patients $N$, the mean and standard deviation of the first-visit offset from disease onset ($\bar{\delta}_f$, $\sigma_{\delta_f}$), the mean and standard deviation of the per-patient follow-up duration ($\overline{T_f}$, $\sigma_{T_f}$), and the mean and standard deviation of inter-visit intervals ($\bar{\delta}_v$, $\sigma_{\delta_v}$). An additional technical parameter, \texttt{min\_spacing\_between\_visits}, enforces a minimum gap between successive visits and prevents numerical artefacts from excessively close observations.
 
-When the user does not supply some or all study parameters, they can instead provide a dataset, usually the same dataset used to fit the model. In that case, the missing parameters are estimated automatically from the observed visit process: $\bar{\delta}_f$ and $\sigma_{\delta_f}$ are derived from the distribution of first-visit ages (corrected by $t_0$ to express the offset from disease onset), $\overline{T_f}$ and $\sigma_{T_f}$ are obtained from the empirical distribution of per-patient follow-up durations (last minus first visit), and $\bar{\delta}_v$ and $\sigma_{\delta_v}$ are estimated from the distribution of all observed inter-visit gaps. This convenience feature, however, introduces a dependency on the training data and breaks the strict separation between the generative mechanism and the observed sample. 
+When the user does not supply some or all study parameters, they can instead provide a dataset, usually the same dataset used to fit the model. In that case, the missing parameters are estimated automatically from the observed visit process: $\bar{\delta}_f$ and $\sigma_{\delta_f}$ are derived from the distribution of first-visit ages (corrected by $t_0$ to express the offset from disease onset), $\overline{T_f}$ and $\sigma_{T_f}$ are obtained from the empirical distribution of per-patient follow-up durations (last minus first visit), and $\bar{\delta}_v$ and $\sigma_{\delta_v}$ are estimated from the distribution of all observed inter-visit gaps. This feature is not present in the base simulation algorithm of Leaspy for the logistic model, but it is worth mentioning that it introduces a dependency on the training data and breaks the strict separation between the generative mechanism and the observed sample. 
 
 \paragraph{A critical artefact of the original algorithm.}
 When the procedure described in~\cite{ortholand2025joint} is applied without modification, a severe distributional mismatch appears in the simulated cohort. Specifically, a large fraction of simulated patients exhibit zero or near-zero follow-up and only a single observed visit. The root cause lies in the ordering of steps 3 and 5: the visit schedule is constructed first (steps 2--3), then the event time is sampled independently (step 5), and finally step 6 discards all visits occurring after the event. For patients with a short Weibull event time $T_{e_i}$, it is possible that $T_{e_i} < t_{i,0}$, meaning the event occurs before even the first planned visit. In that case, all visits are removed and the patient contributes no longitudinal observations to the simulated dataset. Because the Weibull distribution can generate short event times with non-negligible probability, especially for patients with large acceleration $e^{\xi_i}$, this mechanism inflates the mass near zero follow-up in a way that does not reflect the training cohort, where such patients are systematically under-represented due to study inclusion criteria.
 
-\paragraph{The anchor-based simulation algorithm.}
+\subsubsection{The Anchor-Based Simulation Algorithm}
 To eliminate this artefact while preserving the marginal distributions of all simulated quantities, the implementation adopts an anchor-based construction of the visit schedule. The procedure differs from the original in steps 2--5 and proceeds as follows.
 
 \begin{enumerate}

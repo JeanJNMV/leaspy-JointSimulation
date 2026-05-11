@@ -213,7 +213,7 @@ To eliminate this artefact while preserving the marginal distributions of all si
 
 \begin{enumerate}
   \item \textbf{Simulate individual random effects} (unchanged). $\xi_i \sim \mathcal{N}(0,\, \sigma_\xi^2)$ and $\tau_i \sim \mathcal{N}(t_0,\, \sigma_\tau^2)$.
-  \item \textbf{Simulate the event time first}. Before any visit is placed, draw the event time from its Weibull distribution: $T_{e_i} \sim e^{-\xi_i}\, \mathcal{W}(\nu, \rho) + \tau_i$.
+  \item \textbf{Simulate the event time first}. Before any visit is placed, draw the event time from its Weibull distribution: $T_{e_i} \sim e^{-\xi_i}\, \mathcal{W}(\nu, \rho) + \tau_i$. In case of several competing events, multiple event times are drawn independently and the earliest one is retained as the observed event time.
   \item \textbf{Simulate the study window independently of the event}. Draw a follow-up duration $T_{f_i} \sim |\mathcal{N}(\overline{T_f},\, \sigma_{T_f}^2)|$, with an absolute value to ensure positivity, and a first-visit offset $\delta_{f_i} \sim \mathcal{N}(\bar{\delta}_f,\, \sigma_{\delta_f}^2)$. The natural study-end for patient $i$ is $S_i = \tau_i + \delta_{f_i} + T_{f_i}$.
   \item \textbf{Define the anchor}. Set the end of the observation window as
   \[

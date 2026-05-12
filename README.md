@@ -1,6 +1,6 @@
 # Developping simulation and statistical evaluation tools for a non-linear mixed-effect models
 
-The code used for tests and communication during my internship at Paris Brain Institut (ICM) - INRIA ARAMIS Laboratory on the software [leaspy](https://github.com/aramis-lab/leaspy). The associated pull request is [Add Simulation Algo for Joint Model](https://github.com/aramis-lab/leaspy/pull/499). 
+The code used for tests and communication during my internship at Paris Brain Institut (ICM) - INRIA ARAMIS Laboratory on the software [leaspy](https://github.com/aramis-lab/leaspy). The associated pull request is [Add Simulation Algo for Joint Model](https://github.com/aramis-lab/leaspy/pull/499). This internship fulfills the academic requirements for the MVA Master’s program at ENS Paris-Saclay and CentraleSupélec.
 
 ## Features 
 In the leaspy branch associated with this pull request, you can find:
@@ -15,6 +15,7 @@ In addition, a set of notebooks is provided in this repository to test the algor
 |---|------|-------------|
 | 1 | [Base test](notebooks/1.%20Base%20test.ipynb) | Basic test of the joint simulation algorithm. |
 | 2 | [Metrics](notebooks/2.%20Metrics.ipynb) | Evaluation of the metrics used to compare the simulated data to the real data. |
+| 2a | [Wout data](notebooks/2a.%20Wout%20data.ipynb) | Evaluation of the same metrics as in notebook 2, but without access to the real data. |
 | 3 | [Paper's Pipeline](notebooks/3.%20Paper's%20Pipeline.ipynb) | Reproduction of the metrics used in the original paper (Ortholand et al., 2025) to evaluate the simulated parameters. |
 
 ## Author

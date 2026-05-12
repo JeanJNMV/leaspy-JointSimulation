@@ -1,5 +1,8 @@
+# System and IDE files
 .vscode/
 .DS_Store
+
+# Data and results
 _outputs/
 output/
 models/
@@ -7,6 +10,8 @@ logs/
 latex_output/
 err/
 out/
+
+# Temporary and backup files
 *copy*
 *test*
 old/

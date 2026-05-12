@@ -1,4 +1,6 @@
-# Bayesian Bootstrap
+# Other dataset generation procedures
+
+## Bayesian Bootstrap
 
 1. We drew Dirichlet weights $w = (w_1, \ldots, w_N) \sim \text{Dir}(1, \ldots, 1)$ over the $N$ fitted patients and sampled a source patient $i^*$ with probability $w_{i^*}$, yielding a resampled pair $(\xi^*, \tau^*) = (\xi_{i^*}, \tau_{i^*})$.
 
@@ -271,7 +273,7 @@ def _generate_dataset_with_Bootstrap(
 
 --------
 
-# Optimal Transport 
+## Optimal Transport 
 
 1. We collected the empirical cloud of fitted random effects and survival residuals $\{(\xi_i, \tau_i, r_i)\}_{i=1}^N$, where $r_i$ denotes the Cox-Snell residual of patient $i$ computed from the fitted survival sub-model.
 
@@ -622,7 +624,7 @@ def _generate_dataset_with_OT(
 
 ------
 
-# Copula-based
+## Copula-based
 
 1. We collected the fitted random effects and survival residuals $\{(\xi_i, \tau_i, r_i)\}_{i=1}^N$, where $r_i$ denotes the Cox-Snell residual of patient $i$ computed from the fitted survival sub-model, and transformed each marginal to the uniform scale via its empirical CDF: $(\hat{u}_i, \hat{v}_i, \hat{w}_i) = (\hat{F}_\xi(\xi_i), \hat{F}_\tau(\tau_i), \hat{F}_r(r_i))$.
 

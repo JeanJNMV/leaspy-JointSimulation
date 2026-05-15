@@ -4,6 +4,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{enumitem}
+\usepackage{comment}
 \setlength{\marginparwidth}{2cm}
 \usepackage{todonotes}
 \setlist[itemize]{topsep=0pt, itemsep=0pt}
@@ -205,6 +206,7 @@ In the original article describing the joint model~\cite{ortholand2025joint}, th
 
 When the user does not supply some or all study parameters, they can instead provide a dataset, usually the same dataset used to fit the model. In that case, the missing parameters are estimated automatically from the observed visit process: $\bar{\delta}_f$ and $\sigma_{\delta_f}$ are derived from the distribution of first-visit ages (corrected by $t_0$ to express the offset from disease onset), $\overline{T_f}$ and $\sigma_{T_f}$ are obtained from the empirical distribution of per-patient follow-up durations (last minus first visit), and $\bar{\delta}_v$ and $\sigma_{\delta_v}$ are estimated from the distribution of all observed inter-visit gaps. This feature is not present in the base simulation algorithm of Leaspy for the logistic model, but it is worth mentioning that it introduces a dependency on the training data and breaks the strict separation between the generative mechanism and the observed sample. 
 
+\begin{comment}
 \paragraph{A critical artefact of the original algorithm.}
 When the procedure described in~\cite{ortholand2025joint} is applied without modification, a severe distributional mismatch appears in the simulated cohort. Specifically, a large fraction of simulated patients exhibit zero or near-zero follow-up and only a single observed visit. The root cause lies in the ordering of steps 3 and 5: the visit schedule is constructed first (steps 2--3), then the event time is sampled independently (step 5), and finally step 6 discards all visits occurring after the event. For patients with a short Weibull event time $T_{e_i}$, it is possible that $T_{e_i} < t_{i,0}$, meaning the event occurs before even the first planned visit. In that case, all visits are removed and the patient contributes no longitudinal observations to the simulated dataset. Because the Weibull distribution can generate short event times with non-negligible probability, especially for patients with large acceleration $e^{\xi_i}$, this mechanism inflates the mass near zero follow-up in a way that does not reflect the training cohort, where such patients are systematically under-represented due to study inclusion criteria.
 
@@ -224,6 +226,7 @@ To eliminate this artefact while preserving the marginal distributions of all si
 \end{enumerate}
 
 \noindent With this new procedure, the visit window $[A_i - T_{f_i},\, A_i]$ always has length exactly $T_{f_i}$, regardless of whether the event is early or late. Every patient therefore contributes at least one baseline visit and a follow-up spanning $T_{f_i}$ time units, which matches the empirical distribution of the training cohort. The artefactual mass at zero follow-up is eliminated without altering the marginal distributions of $T_{e_i}$, $\tau_i$, or $\xi_i$.
+\end{comment}
 
 \subsection{Results and Validation}
 

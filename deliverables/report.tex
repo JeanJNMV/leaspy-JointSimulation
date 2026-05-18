@@ -188,7 +188,7 @@ The joint log-likelihood decomposes additively into longitudinal and survival da
 
 \subsection{The Joint Simulation Algorithm}
 
-\subsubsection{The Original Simulation Algorithm}
+\subsubsection{The Original Algorithm}
 
 In the original article describing the joint model~\cite{ortholand2025joint}, the simulation of synthetic patient cohorts under the joint model proceeds in six sequential steps, described below. This procedure generalizes the simulation workflow available in Leaspy for the logistic model to the joint setting.
 
@@ -202,31 +202,34 @@ In the original article describing the joint model~\cite{ortholand2025joint}, th
   \item \textbf{Apply censoring}. The event time and visit schedule are reconciled by applying two censoring rules: (i) all visits occurring after the event ($t_{i,j} > T_{e_i}$) are removed from the follow-up; (ii) events occurring after the last remaining visit ($T_{e_i} > t_{i,\max(j)}$) are treated as right-censored. This produces the observed tuple $(y_{i,j}, T_{e_i}, B^e_i)$, where the censoring indicator $B^e_i = 1$ if the event was observed and $B^e_i = 0$ if it was censored.
 \end{enumerate}
 
-\noindent The simulation algorithm relies on two disjoint sets of parameters. The model parameters, read directly from the fitted joint model, are: the population distributions of the individual random effects ($t_0$, $\sigma_\tau$, $\sigma_\xi$), the Weibull survival parameters ($\nu$, $\rho$), and the source-to-survival mixing weights $\zeta$ whenever the model includes latent sources. These parameters are set once and for all during model fitting and are not accessible to the user at simulation time. The study parameters, supplied by the user, govern the structure of the synthetic cohort: the number of patients $N$, the mean and standard deviation of the first-visit offset from disease onset ($\bar{\delta}_f$, $\sigma_{\delta_f}$), the mean and standard deviation of the per-patient follow-up duration ($\overline{T_f}$, $\sigma_{T_f}$), and the mean and standard deviation of inter-visit intervals ($\bar{\delta}_v$, $\sigma_{\delta_v}$). An additional technical parameter, \texttt{min\_spacing\_between\_visits}, enforces a minimum gap between successive visits and prevents numerical artefacts from excessively close observations.
+The simulation algorithm relies on two disjoint sets of parameters. The model parameters, read directly from the fitted joint model, are: the population distributions of the individual random effects ($t_0$, $\sigma_\tau$, $\sigma_\xi$), the Weibull survival parameters ($\nu$, $\rho$), and the source-to-survival mixing weights $\zeta$ whenever the model includes latent sources. These parameters are set once and for all during model fitting and are not accessible to the user at simulation time. The study parameters, supplied by the user, govern the structure of the synthetic cohort: the number of patients $N$, the mean and standard deviation of the first-visit offset from disease onset ($\bar{\delta}_f$, $\sigma_{\delta_f}$), the mean and standard deviation of the per-patient follow-up duration ($\overline{T_f}$, $\sigma_{T_f}$), and the mean and standard deviation of inter-visit intervals ($\bar{\delta}_v$, $\sigma_{\delta_v}$). An additional technical parameter, \texttt{min\_spacing\_between\_visits}, enforces a minimum gap between successive visits and prevents numerical artefacts from excessively close observations.
 
-When the user does not supply some or all study parameters, they can instead provide a dataset, usually the same dataset used to fit the model. In that case, the missing parameters are estimated automatically from the observed visit process: $\bar{\delta}_f$ and $\sigma_{\delta_f}$ are derived from the distribution of first-visit ages (corrected by $t_0$ to express the offset from disease onset), $\overline{T_f}$ and $\sigma_{T_f}$ are obtained from the empirical distribution of per-patient follow-up durations (last minus first visit), and $\bar{\delta}_v$ and $\sigma_{\delta_v}$ are estimated from the distribution of all observed inter-visit gaps. This feature is not present in the base simulation algorithm of Leaspy for the logistic model, but it is worth mentioning that it introduces a dependency on the training data and breaks the strict separation between the generative mechanism and the observed sample. 
+\subsubsection{Adaptations in the Leaspy Implementation}
 
-\begin{comment}
-\paragraph{A critical artefact of the original algorithm.}
-When the procedure described in~\cite{ortholand2025joint} is applied without modification, a severe distributional mismatch appears in the simulated cohort. Specifically, a large fraction of simulated patients exhibit zero or near-zero follow-up and only a single observed visit. The root cause lies in the ordering of steps 3 and 5: the visit schedule is constructed first (steps 2--3), then the event time is sampled independently (step 5), and finally step 6 discards all visits occurring after the event. For patients with a short Weibull event time $T_{e_i}$, it is possible that $T_{e_i} < t_{i,0}$, meaning the event occurs before even the first planned visit. In that case, all visits are removed and the patient contributes no longitudinal observations to the simulated dataset. Because the Weibull distribution can generate short event times with non-negligible probability, especially for patients with large acceleration $e^{\xi_i}$, this mechanism inflates the mass near zero follow-up in a way that does not reflect the training cohort, where such patients are systematically under-represented due to study inclusion criteria.
+The Leaspy implementation follows the six-step procedure above and introduces the following adaptations.
 
-\subsubsection{The Anchor-Based Simulation Algorithm}
-To eliminate this artefact while preserving the marginal distributions of all simulated quantities, the implementation adopts an anchor-based construction of the visit schedule. The procedure differs from the original in steps 2--5 and proceeds as follows.
+\paragraph{Data-driven estimation of study parameters.}
+As an extension developed in this work, when the user does not supply some or all study parameters, they can instead provide a dataset, usually the same dataset used to fit the model. In that case, the missing parameters are estimated automatically from the observed visit process: $\bar{\delta}_f$ and $\sigma_{\delta_f}$ are derived from the distribution of first-visit ages (corrected by $t_0$ to express the offset from disease onset), $\overline{T_f}$ and $\sigma_{T_f}$ are obtained from the empirical distribution of per-patient follow-up durations (last minus first visit), and $\bar{\delta}_v$ and $\sigma_{\delta_v}$ are estimated from the distribution of all observed inter-visit gaps. This feature is not present in the base simulation algorithm of Leaspy for the logistic model; it introduces a dependency on the training data and breaks the strict separation between the generative mechanism and the observed sample, which should be kept in mind when interpreting simulation results.
 
-\begin{enumerate}
-  \item \textbf{Simulate individual random effects} (unchanged). $\xi_i \sim \mathcal{N}(0,\, \sigma_\xi^2)$ and $\tau_i \sim \mathcal{N}(t_0,\, \sigma_\tau^2)$.
-  \item \textbf{Simulate the event time first}. Before any visit is placed, draw the event time from its Weibull distribution: $T_{e_i} \sim e^{-\xi_i}\, \mathcal{W}(\nu, \rho) + \tau_i$. In case of several competing events, multiple event times are drawn independently and the earliest one is retained as the observed event time.
-  \item \textbf{Simulate the study window independently of the event}. Draw a follow-up duration $T_{f_i} \sim |\mathcal{N}(\overline{T_f},\, \sigma_{T_f}^2)|$, with an absolute value to ensure positivity, and a first-visit offset $\delta_{f_i} \sim \mathcal{N}(\bar{\delta}_f,\, \sigma_{\delta_f}^2)$. The natural study-end for patient $i$ is $S_i = \tau_i + \delta_{f_i} + T_{f_i}$.
-  \item \textbf{Define the anchor}. Set the end of the observation window as
-  \[
-    A_i = \begin{cases} T_{e_i} & \text{if } T_{e_i} \leq S_i \quad \text{(event observed),} \\ S_i & \text{if } T_{e_i} > S_i \quad \text{(event right-censored).} \end{cases}
-  \]
-  \item \textbf{Build the visit schedule forward from} $A_i - T_{f_i}$. The baseline visit is placed at $t_{i,0} = A_i - T_{f_i}$, and successive visits are added by drawing inter-visit gaps $\delta_{v_{i,j}} \sim \mathcal{N}(\bar{\delta}_v,\, \sigma_{\delta_v}^2)$ until the next visit would exceed $A_i$. Only visits satisfying $t_{i,j} \leq A_i$ are retained.
-  \item \textbf{Simulate longitudinal outcomes and record the event} (unchanged). Outcomes $y_{i,j} \sim \mathcal{B}(\gamma_0(\psi_i(t_{i,j})), p)$ and the event tuple $(T_{e_i}, B^e_i)$ are recorded as before.
-\end{enumerate}
+\paragraph{Event time sampling via the adapted \texttt{estimate} method.}
+A key contribution of this work is the extension of the joint model's \texttt{estimate} method to return event predictions alongside longitudinal trajectories, and its integration into the simulation pipeline. The original algorithm samples event times directly from the closed-form Weibull formula $T_{e_i} \sim e^{-\xi_i}\,\mathcal{W}(\nu, \rho) + \tau_i$. The implementation instead reuses the model's own \texttt{estimate} method, which evaluates the individual trajectory at each planned visit time $t_{i,j}$ and returns a \emph{conditional} quantity: for a single-event model it returns the conditional survival $S_i(t_{i,j})/S_i(t_{i,0})$, and for competing events it returns the conditional cause-specific cumulative incidence functions $\text{CIF}_{i,l}(t_{i,j})/S_i(t_{i,0})$, each conditioned on the patient being alive at the first planned visit $t_{i,0}$.  From these, the total conditional cumulative distribution function is assembled as:
+\begin{equation}
+F_i^{\,\text{cond}}(t_{i,j}) = 
+\begin{cases}
+1 - S_i(t_{i,j})\,/\,S_i(t_{i,0}) & \text{(single event),} \\[4pt]
+\displaystyle\sum_{l=1}^{L} \text{CIF}_{i,l}(t_{i,j})\,/\,S_i(t_{i,0}) & \text{(competing events).}
+\end{cases}
+\end{equation}
+Inverse-transform sampling is then applied on this discrete grid: a uniform draw $U \sim \mathcal{U}[0,1]$ is compared to $F_i^{\,\text{cond}}$ at each visit, and the event time is set to the first visit time $t_{i,j}$ at which $F_i^{\,\text{cond}}(t_{i,j}) \geq U$. If $U$ exceeds the total conditional CDF at the last planned visit, the patient is right-censored at that visit.
 
-\noindent With this new procedure, the visit window $[A_i - T_{f_i},\, A_i]$ always has length exactly $T_{f_i}$, regardless of whether the event is early or late. Every patient therefore contributes at least one baseline visit and a follow-up spanning $T_{f_i}$ time units, which matches the empirical distribution of the training cohort. The artefactual mass at zero follow-up is eliminated without altering the marginal distributions of $T_{e_i}$, $\tau_i$, or $\xi_i$.
-\end{comment}
+Two consequences follow from this design. First, because the CDF is evaluated only at the planned visit times, event times are constrained to lie on the visit grid rather than being continuous. Second, because the sampling is conditioned on survival at $t_{i,0}$, the event can never be placed before the first planned visit, which implicitly prevents the artefact described in the original formulation.
+
+\paragraph{Generalization to competing events.}
+In the single-event case the event indicator is set to 1 whenever the event time falls within the follow-up window. In the competing-events case ($L > 1$), the event type $l^*$ is drawn at the identified visit time by treating the incremental cause-specific CIF as unnormalized probabilities:
+\begin{equation}
+p(l^* = l) \;\propto\; \max\!\bigl(\text{CIF}_{i,l}(t_{i,j}) - \text{CIF}_{i,l}(t_{i,j-1}),\; 0\bigr),
+\end{equation}
+and the censoring indicator is set to $B^e_i = l^*$, following the convention that $B^e_i = 0$ denotes censoring and $B^e_i = l$ denotes cause-$l$ event.
 
 \subsection{Results and Validation}
 

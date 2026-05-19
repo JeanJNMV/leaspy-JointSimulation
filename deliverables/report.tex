@@ -212,7 +212,7 @@ The Leaspy implementation follows the six-step procedure above and introduces th
 As an extension developed in this work, when the user does not supply some or all study parameters, they can instead provide a dataset, usually the same dataset used to fit the model. In that case, the missing parameters are estimated automatically from the observed visit process: $\bar{\delta}_f$ and $\sigma_{\delta_f}$ are derived from the distribution of first-visit ages (corrected by $t_0$ to express the offset from disease onset), $\overline{T_f}$ and $\sigma_{T_f}$ are obtained from the empirical distribution of per-patient follow-up durations (last minus first visit), and $\bar{\delta}_v$ and $\sigma_{\delta_v}$ are estimated from the distribution of all observed inter-visit gaps. This feature is not present in the base simulation algorithm of Leaspy for the logistic model; it introduces a dependency on the training data and breaks the strict separation between the generative mechanism and the observed sample, which should be kept in mind when interpreting simulation results.
 
 \paragraph{Event time sampling via the adapted \texttt{estimate} method.}
-A key contribution of this work is the extension of the joint model's \texttt{estimate} method to return event predictions alongside longitudinal trajectories, and its integration into the simulation pipeline. The original algorithm samples event times directly from the closed-form Weibull formula $T_{e_i} \sim e^{-\xi_i}\,\mathcal{W}(\nu, \rho) + \tau_i$. The implementation instead reuses the model's own \texttt{estimate} method, which evaluates the individual trajectory at each planned visit time $t_{i,j}$ and returns a \emph{conditional} quantity: for a single-event model it returns the conditional survival $S_i(t_{i,j})/S_i(t_{i,0})$, and for competing events it returns the conditional cause-specific cumulative incidence functions $\text{CIF}_{i,l}(t_{i,j})/S_i(t_{i,0})$, each conditioned on the patient being alive at the first planned visit $t_{i,0}$.  From these, the total conditional cumulative distribution function is assembled as:
+A key contribution of this work is the extension of the joint model's \texttt{estimate} method to return event predictions alongside longitudinal trajectories, and its integration into the simulation pipeline. The original algorithm samples event times directly from the closed-form Weibull formula $T_{e_i} \sim e^{-\xi_i}\,\mathcal{W}(\nu, \rho) + \tau_i$. The implementation instead reuses the model's own \texttt{estimate} method, which evaluates the individual trajectory at each planned visit time $t_{i,j}$ and returns a conditional quantity: for a single-event model it returns the conditional survival $S_i(t_{i,j})/S_i(t_{i,0})$, and for competing events it returns the conditional cause-specific cumulative incidence functions $\text{CIF}_{i,l}(t_{i,j})/S_i(t_{i,0})$, each conditioned on the patient being alive at the first planned visit $t_{i,0}$.  From these, the total conditional cumulative distribution function is assembled as:
 \begin{equation}
 F_i^{\,\text{cond}}(t_{i,j}) = 
 \begin{cases}
@@ -222,7 +222,7 @@ F_i^{\,\text{cond}}(t_{i,j}) =
 \end{equation}
 Inverse-transform sampling is then applied on this discrete grid: a uniform draw $U \sim \mathcal{U}[0,1]$ is compared to $F_i^{\,\text{cond}}$ at each visit, and the event time is set to the first visit time $t_{i,j}$ at which $F_i^{\,\text{cond}}(t_{i,j}) \geq U$. If $U$ exceeds the total conditional CDF at the last planned visit, the patient is right-censored at that visit.
 
-Two consequences follow from this design. First, because the CDF is evaluated only at the planned visit times, event times are constrained to lie on the visit grid rather than being continuous. Second, because the sampling is conditioned on survival at $t_{i,0}$, the event can never be placed before the first planned visit, which implicitly prevents the artefact described in the original formulation.
+Two consequences follow from this design. First, because the CDF is evaluated only at the planned visit times, event times are constrained to lie on the visit grid rather than being continuous. Second, because the sampling is conditioned on survival at $t_{i,0}$, the event can never be placed before the first planned visit.
 
 \paragraph{Generalization to competing events.}
 In the single-event case the event indicator is set to 1 whenever the event time falls within the follow-up window. In the competing-events case ($L > 1$), the event type $l^*$ is drawn at the identified visit time by treating the incremental cause-specific CIF as unnormalized probabilities:
@@ -246,8 +246,8 @@ and the censoring indicator is set to $B^e_i = l^*$, following the convention th
 \section{Conclusion}
 TODO
 \newpage
-% Bibliography 
 
+% Bibliography 
 \bibliographystyle{plain}
 \bibliography{bibliography}
 

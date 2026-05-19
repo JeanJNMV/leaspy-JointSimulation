@@ -4,8 +4,10 @@ The code used for tests and communication during my internship at Paris Brain In
 
 ## Features 
 In the leaspy branch associated with this pull request, you can find:
-- Implementation of a simulation algorithm for the joint model ```JointSimulationAlgorithm``` which inherits from the ```SimulationAlgorithm``` class of leaspy.
-- Unit tests for the joint simulation algorithm. These tests follow the same structure as the existing tests in leaspy using pytest to ensure the correctness of the implementation. 
+- `JointSimulationAlgorithm` which inherits from `SimulationAlgorithm`.
+- Added unit tests for `JointSimulationAlgorithm`.
+- Adapted `estimate()` to work with the joint model and properly handle the events. It is used in `JointSimulationAlgorithm`.
+- Added functional tests for this new `estimate`.
 
 In addition, a set of notebooks is provided in this repository to test the algorithm and evaluate the metrics used to compare the simulated data to the real data. These notebooks are intended to be used for communication and demonstration purposes, and they can be adapted for further testing and evaluation of the joint simulation algorithm.
 

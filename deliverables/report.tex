@@ -227,7 +227,7 @@ Two consequences follow from this design. First, because the CDF is evaluated on
 \paragraph{Generalization to competing events.}
 In the single-event case the event indicator is set to 1 whenever the event time falls within the follow-up window. In the competing-events case ($L > 1$), the event type $l^*$ is drawn at the identified visit time by treating the incremental cause-specific CIF as unnormalized probabilities:
 \begin{equation}
-p(l^* = l) \;\propto\; \max\!\bigl(\text{CIF}_{i,l}(t_{i,j}) - \text{CIF}_{i,l}(t_{i,j-1}),\; 0\bigr),
+p(l^* = l) \;\propto\; \max\left(\text{CIF}_{i,l}(t_{i,j}) - \text{CIF}_{i,l}(t_{i,j-1}),\; 0\right),
 \end{equation}
 and the censoring indicator is set to $B^e_i = l^*$, following the convention that $B^e_i = 0$ denotes censoring and $B^e_i = l$ denotes cause-$l$ event.
 

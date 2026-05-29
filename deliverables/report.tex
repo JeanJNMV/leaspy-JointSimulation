@@ -105,13 +105,13 @@ Because this integral is intractable in closed form, Leaspy employs the MCMC-SAE
 
 A key innovation of Leaspy is the interpretation of disease progression within a Riemannian geometric framework~\cite{schiratti2017bayesian}. The core idea is to represent the multivariate progression of clinical markers as a geodesic on a product Riemannian manifold, where the shape of the curve is entirely determined by the choice of the metric $G(p)$. 
 
-For clinical scores exhibiting floor or ceiling effects, common in neurodegenerative disease assessment, the manifold $(0,1)$ equipped with the metric $G(p) = 1/[p^2(1-p)^2]$ yields logistic (sigmoidal) trajectories. This metric encapsulates the bounded nature of the scores in a geometrically principled way. More generally, the Euclidean metric on $\mathbb{R}^n$ yields linear trajectories, allowing the framework to accommodate diverse data types.
+For clinical scores exhibiting floor or ceiling effects, common in neurodegenerative disease assessment, the manifold $(0,1)$ equipped with the metric $G(p) = 1/[p^2(1-p)^2]$ yields logistic (sigmoidal) trajectories. This metric encapsulates the bounded nature of the scores in a geometrically principled way. More generally, the Euclidean metric on $\mathbb{R}^n$ yields linear trajectories, allowing the framework to accommodate diverse data types. 
 
-The average population trajectory $\gamma_0$ is a geodesic parameterized by its initial conditions at reference time $t_0$: initial position $p_0 = \gamma_0(t_0)$ and initial speed $v_0 = \dot{\gamma}_0(t_0)$. Individual trajectories $\gamma_i(t)$ are derived from this average through three types of random effects:
+The average population trajectory $\gamma_0$ is a geodesic parameterized by its initial conditions at reference time $t_0$: initial position $p_0 = \gamma_0(t_0)$ and initial speed $v_0 = \dot{\gamma}_0(t_0)$. For numerical convenience, the model internally works with the unconstrained reparametrisations $\tilde{g} = \mathrm{logit}(p_0)$ and $\tilde{v}_0 = \log v_0$, which lift the constraints $p_0 \in (0, 1)$ and $v_0 > 0$ and constitute the quantities directly estimated by MCMC-SAEM. Individual trajectories $\gamma_i(t)$ are derived from this average through three types of random effects:
 
 \begin{itemize}
-  \item \textbf{Time shift} $\tau_i$: earlier or later disease onset relative to the population average.
-  \item \textbf{Log-acceleration factor} $\xi_i$: faster or slower progression speed.
+  \item \textbf{Time shift} $\tau_i \sim \mathcal{N}(t_0, \sigma_\tau^2)$: earlier or later disease onset relative to the population average, where $\sigma_\tau$ is the inter-individual standard deviation of onset times.
+  \item \textbf{Log-acceleration factor} $\xi_i \sim \mathcal{N}(0, \sigma_\xi^2)$: faster or slower progression speed, where $\sigma_\xi$ is the inter-individual standard deviation of log-acceleration factors.
   \item \textbf{Space shifts} $w_{i,k}$: modifications to the relative ordering and timing of individual biomarker progressions, encoded as tangent-space perturbations.
 \end{itemize}
 
@@ -120,11 +120,11 @@ These three effects are combined through a latent disease age reparametrization:
   \psi_i(t) = v_0\, e^{\xi_i}(t - \tau_i) + t_0,
 \label{eq:latent-age}
 \end{equation} 
-which transforms the calendar age $t$ of patient $i$ into a disease-stage age. This reparametrization provides a biologically interpretable decomposition: $\tau_i$ captures onset heterogeneity, $e^{\xi_i}$ captures progression rate heterogeneity, and the space shifts $w_{i,k} = (\mathbf{A}\mathbf{s}_i)_k$, obtained via the mixing matrix $\mathbf{A}$ acting on independent sources $\mathbf{s}_i$, capture differences in the sequential ordering of biomarker changes across patients.
+which transforms the calendar age $t$ of patient $i$ into a disease-stage age. This reparametrization provides a biologically interpretable decomposition: $\tau_i$ captures onset heterogeneity, $e^{\xi_i}$ captures progression rate heterogeneity, and the space shifts $w_{i,k} = (\mathbf{A}\mathbf{s}_i)_k$, obtained via the mixing matrix $\mathbf{A}$ acting on independent sources $\mathbf{s}_i$, capture differences in the sequential ordering of biomarker changes across patients. The columns of $\mathbf{A}$ are constructed from a set of free coefficients $\beta$, jointly estimated with the other population parameters during model fitting.
 
 \subsection{Main Models}
 
-\paragraph{Logistic Model.} The logistic model is the core model of Leaspy, designed for multivariate longitudinal data whose components exhibit sigmoidal (bounded, monotone) progressions, typical of cognitive scores or normalized biomarkers. Such S-shaped trajectories naturally capture the characteristic three-phase pattern observed in many neurodegenerative diseases: an initial slow deterioration when the disease is subclinical, a rapid inflection phase corresponding to the onset of clinically detectable decline, and a final plateau as scores approach their floor or ceiling values.
+\paragraph{Logistic Model.} The logistic model is the core model of Leaspy, designed for multivariate longitudinal data whose components exhibit sigmoidal (bounded, monotone) progressions, typical of cognitive scores or normalized biomarkers. Such S-shaped trajectories naturally capture the characteristic three-phase pattern observed in many neurodegenerative diseases: an initial slow deterioration when the disease is subclinical, a rapid inflection phase corresponding to the onset of clinically detectable decline, and a final plateau as scores approach their floor or ceiling values. Observed scores are further modelled with additive noise of standard deviation $\sigma$, a population parameter estimated jointly with the trajectory parameters.
 
 \paragraph{Joint Model.} The joint model~\cite{ortholand2025joint} extends the logistic model to simultaneously analyze longitudinal measurements and time-to-event data (survival, clinical events, competing risks). Rather than treating these processes separately, which can lead to biases from informative dropout, the joint model links them through the shared latent disease age $\psi_i(t)$, avoiding the need to define an explicit disease reference time. It is on this model that the simulation and evaluation tools developed in this work are focused.
 
@@ -235,7 +235,7 @@ The model is composed of three interconnected components. The longitudinal sub-m
 \begin{equation}
   S_i(t) = S_0(\psi_i(t)) = \mathbf{1}_{\psi_i(t) > t_0}\, \exp\!\left(-\left(\frac{\psi_i(t) - t_0}{\nu}\right)^{\rho}\right) + \mathbf{1}_{\psi_i(t) \leq t_0},
 \end{equation}
-where $\nu > 0$ is a scale parameter and $\rho > 0$ is the shape parameter of the Weibull distribution. The linkage structure connecting the two sub-models is the shared latent disease age $\psi_i(t) = e^{\xi_i}(t - \tau_i) + t_0$, which encodes individual variability in disease onset ($\tau_i$) and progression rate ($e^{\xi_i}$). This differs from classical shared-random-effects joint models, which link the survival hazard to the value of the longitudinal outcome; here the link is structural, operating directly at the level of the disease timeline.
+where $\nu > 0$ is a scale parameter and $\rho > 0$ is the shape parameter of the Weibull distribution; the model estimates the unconstrained reparametrisations $\tilde{\nu} = -\log\nu$ and $\tilde{\rho} = \log\rho$, which enforce positivity while enabling unconstrained optimisation. The linkage structure connecting the two sub-models is the shared latent disease age $\psi_i(t) = e^{\xi_i}(t - \tau_i) + t_0$, which encodes individual variability in disease onset ($\tau_i$) and progression rate ($e^{\xi_i}$). This differs from classical shared-random-effects joint models, which link the survival hazard to the value of the longitudinal outcome; here the link is structural, operating directly at the level of the disease timeline.
 
 The formulation extends naturally to $L \geq 1$ competing events by assigning an independent pair of Weibull parameters $(\nu_l, \rho_l)$ to each event type $l \in \{1, \ldots, L\}$. In the single-event case the quantity of interest is the overall survival probability $S_i(t)$; in the competing-events case it becomes the set of cause-specific cumulative incidence functions $\mathrm{CIF}_{i,l}(t)$, each measuring the probability that event $l$ occurs by time $t$ in the presence of all other competing risks. When the longitudinal sub-model includes $K \geq 1$ latent sources $\mathbf{s}_i \in \mathbb{R}^K$, the survival sub-model is further coupled to the individual biomarker ordering pattern through a matrix of mixing weights $\boldsymbol{\zeta} \in \mathbb{R}^{K \times L}$. The survival shift $(\boldsymbol{\zeta}^\top \mathbf{s}_i)_l$ then enters an accelerated failure time reparametrization of the Weibull scale parameter for patient $i$ and event $l$:
 \begin{equation}
@@ -426,7 +426,11 @@ The \textit{Bland-Altman analysis} provides a graphical complement to the ICC. F
 
 \subsection{Experimental Setup}
 
-\subsection{Results}
+The reference model $\theta^*$ is a joint model fitted on the PULSE dataset~\cite{ortholand2025joint}, with a single event ($L = 1$). The simulation study is carried out in the \textit{random} visit mode with the following study parameters: first-visit offset $\bar{\delta}_f = -2.0$ years and $\sigma_{\delta_f} = 1.0$ year; follow-up duration $\overline{T_f} = 8.0$ years and $\sigma_{T_f} = 2.0$ years; inter-visit interval $\bar{\delta}_v = 0.083$ years and $\sigma_{\delta_v} = 0.042$ years; and a minimum spacing between visits of $0.05$ years. These parameters are deliberately chosen to place each simulated cohort in favourable conditions: the short inter-visit interval and long follow-up produce a dense observation schedule, so that each patient contributes many data points. This abundance of information per individual reduces the number of MCMC-SAEM iterations required to reach convergence both at the fitting and at the personalisation stage. 
+
+Each synthetic cohort contains $N = 50$ patients, and the experiment is repeated $M = 50$ times. Each fresh model is fitted using the MCMC-SAEM algorithm with $N_{\mathrm{iter}} = 500$ iterations, and the subsequent personalisation step runs for $N_{\mathrm{perso}} = 500$ iterations.
+
+\subsection{Results and Interpretation}
 
 \newpage
 

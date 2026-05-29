@@ -15,10 +15,29 @@ In addition, a set of notebooks is provided in this repository to test the algor
 
 | # | Name | Description |
 |---|------|-------------|
-| 1 | [Base test](notebooks/1.%20Base%20test.ipynb) | Basic test of the joint simulation algorithm. |
-| 2 | [Metrics](notebooks/2.%20Metrics.ipynb) | Evaluation of the metrics used to compare the simulated data to the real data. |
-| 2a | [Wout data](notebooks/2a.%20Wout%20data.ipynb) | Evaluation of the same metrics as in notebook 2, but without access to the real data. |
-| 3 | [Paper's Pipeline](notebooks/3.%20Paper's%20Pipeline.ipynb) | Reproduction of the metrics used in the original paper (Ortholand et al., 2025) to evaluate the simulated parameters. |
+| 1 | [Base test](notebooks/1.%20Base%20test.ipynb) | End-to-end demonstration of joint simulation: loads the built-in simulated dataset, fits a `JointModel`, runs `JointSimulationAlgorithm` to generate new patient trajectories and survival events, and visualizes the output with UMAP. |
+| 2 | [Metrics](notebooks/2.%20Metrics.ipynb) | Statistical evaluation of simulation quality against the original reference dataset, using Wasserstein distance, Kolmogorov-Smirnov tests, Kaplan-Meier survival curves, visit-count distributions, and feature-trajectory correlations. Requires access to the original data. |
+| 2a | [Wout data](notebooks/2a.%20Wout%20data.ipynb) | Same statistical evaluation as notebook 2, adapted for settings where the original reference data is unavailable. Assesses intrinsic properties of the simulated output (survival curves, visit distributions, trajectory density estimates) across multiple simulation runs. |
+| 3 | [Paper's Pipeline](notebooks/3.%20Paper's%20Pipeline.ipynb) | Reproduces the simulation study from Ortholand et al. (2025). Repeatedly simulates datasets from a reference model, re-fits a fresh `JointModel` on each, and measures population-parameter recovery accuracy using REE (Relative Estimation Error), ICC (Intraclass Correlation Coefficient), etc. |
+
+## Project Structure
+
+```
+├── notebooks/                     # Jupyter notebooks (see table above)
+│   ├── 1. Base test.ipynb
+│   ├── 2. Metrics.ipynb
+│   ├── 2a. Wout data.ipynb
+│   └── 3. Paper's Pipeline.ipynb
+├── deliverables/
+├── notes/
+└── README.md
+```
+
+## Reference
+
+- Juliette Ortholand, Stanley Durrleman, and Sophie Tezenas du Montcel. A joint
+spatiotemporal model for multiple longitudinal markers and competing events.
+arXiv preprint arXiv:2501.08960, 2025.
 
 ## Author
 - **Jean-Vincent Martini**

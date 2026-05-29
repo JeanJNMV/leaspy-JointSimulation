@@ -355,11 +355,11 @@ The diagnostic force of this design lies precisely in its circularity. The simul
     \node[box, fill=blue!8,    below=1.8cm of ref] (trueip)
           {True individual parameters\\$(\tau_i^{(m)},\,\xi_i^{(m)})$};
 
-    % Flow arrows
+    % Flow arrows 
     \draw[arr] (ref)  -- node[above, font=\footnotesize]{simulate} (sim);
-    \draw[arr] (sim)  -- node[above, font=\footnotesize]{fit} (fit);
+    \draw[{Stealth[length=6pt]}-{Stealth[length=6pt]}, thick] (sim) -- node[above, font=\footnotesize]{fit} (fit);
     \draw[arr] (fit)  -- node[right, font=\footnotesize]{personalise} (per);
-    \draw[arr] (sim.south) -- node[left, font=\footnotesize]{draw $(\tau_i, \xi_i)$} (trueip);
+    \draw[arr] (ref.south) -- node[left, font=\footnotesize]{draw $(\tau_i, \xi_i)$} (trueip);
 
     % Comparison arrows
     \draw[darr] (ref.north east) to[out=30, in=150] node[above, font=\footnotesize, color=black] 

@@ -50,7 +50,7 @@
 
 % Abstract 
 \begin{abstract}
-        TODO
+        TODO\todo{ATTENTION INCLURE LES PARTIES CS}
 \end{abstract}
 \newpage
 
@@ -62,7 +62,7 @@
 % Introduction 
 
 \section{Introduction} 
-TODO  
+TODO\todo{doit inclure les autres travaux au sein du labo (workshop, review, etc.) qui ne sont pas détaillés dans le rapport}
 
 \newpage 
 
@@ -223,7 +223,7 @@ The present work develops and integrates into the Leaspy codebase a set of simul
 
 The first is algorithmic: to provide a self-consistent and numerically robust implementation of the joint simulation procedure, extending the existing \texttt{simulate} method, currently restricted to the logistic model, to the joint model with its competing-events variant. This required extending the \texttt{estimate} method of the joint model to return event predictions compatible with the simulation pipeline, implementing inverse-transform sampling on the discrete visit grid, and handling the generalization to competing events through cause-specific conditional cumulative incidence functions.
 
-The second is methodological: to enable rigorous simulation studies of the joint model, following the ADEMP framework. By generating synthetic cohorts under known model parameters, calibrated to real-world datasets such as PRO-ACT, these tools make it possible to evaluate the bias and coverage of MCMC-SAEM parameter estimates, to compare MAP and Gibbs personalization under varying data densities, and to quantify the effect of informative dropout on estimation. They also produce shareable, privacy-preserving synthetic datasets that can be distributed alongside the model code for reproducibility and benchmarking purposes.
+The second is methodological: to enable rigorous simulation studies of the joint model, following the ADEMP framework \cite{morris2019using}. By generating synthetic cohorts under known model parameters, calibrated to real-world datasets such as PRO-ACT, these tools make it possible to evaluate the bias and coverage of MCMC-SAEM parameter estimates, to compare MAP and Gibbs personalization under varying data densities, and to quantify the effect of informative dropout on estimation. They also produce shareable, privacy-preserving synthetic datasets that can be distributed alongside the model code for reproducibility and benchmarking purposes.
 
 \newpage
 
@@ -426,12 +426,88 @@ The \textit{Bland-Altman analysis} provides a graphical complement to the ICC. F
 
 \subsection{Experimental Setup}
 
-The reference model $\theta^*$ is a joint model fitted on the PULSE dataset~\cite{ortholand2025joint}, with a single event ($L = 1$). The simulation study is carried out in the \textit{random} visit mode with the following study parameters: first-visit offset $\bar{\delta}_f = -2.0$ years and $\sigma_{\delta_f} = 1.0$ year; follow-up duration $\overline{T_f} = 8.0$ years and $\sigma_{T_f} = 2.0$ years; inter-visit interval $\bar{\delta}_v = 0.083$ years and $\sigma_{\delta_v} = 0.042$ years; and a minimum spacing between visits of $0.05$ years. These parameters are deliberately chosen to place each simulated cohort in favourable conditions: the short inter-visit interval and long follow-up produce a dense observation schedule, so that each patient contributes many data points. This abundance of information per individual reduces the number of MCMC-SAEM iterations required to reach convergence both at the fitting and at the personalisation stage. 
+The reference model $\theta^*$ is a joint model fitted on the PULSE dataset, with a single event ($L = 1$). The simulation study is carried out in the \textit{random} visit mode with the following study parameters: first-visit offset $\bar{\delta}_f = -2.0$ years and $\sigma_{\delta_f} = 1.0$ year; follow-up duration $\overline{T_f} = 8.0$ years and $\sigma_{T_f} = 2.0$ years; inter-visit interval $\bar{\delta}_v = 0.083$ years and $\sigma_{\delta_v} = 0.042$ years; and a minimum spacing between visits of $0.05$ years. These parameters are deliberately chosen to place each simulated cohort in favourable conditions: the short inter-visit interval and long follow-up produce a dense observation schedule, so that each patient contributes many data points. This abundance of information per individual reduces the number of MCMC-SAEM iterations required to reach convergence both at the fitting and at the personalisation stage. 
 
-Each synthetic cohort contains $N = 50$ patients, and the experiment is repeated $M = 50$ times. Each fresh model is fitted using the MCMC-SAEM algorithm with $N_{\mathrm{iter}} = 500$ iterations, and the subsequent personalisation step runs for $N_{\mathrm{perso}} = 500$ iterations.
+Each synthetic cohort contains $N = TODO$ patients, and the experiment is repeated $M = TODO$ times. Each fresh model is fitted using the MCMC-SAEM algorithm with $N_{\mathrm{iter}} = TODO$ iterations, and the subsequent personalisation step runs for $N_{\mathrm{perso}} = TODO$ iterations. \todo{remplir les valeurs}
 
 \subsection{Results and Interpretation}
 
+\todo{remplacer par les figures finales}
+
+\begin{table}[htbp]
+\centering
+\caption{Population parameter recovery metrics.}
+\begin{tabular}{lrrrrr}
+\hline
+Parameter & $\theta$ (true) & $\bar{\theta}$ (M) & RB (\%) & RRMSE (\%) & RSE \\
+\hline
+$\beta$ (mean)        &  0.00858  &  0.00005    & $-$99.439 & 252.612 & 418.0295 \\
+$\tilde{g}$ (mean)    &  0.49849  &  0.43662  & $-$12.412 &  14.664 &   0.0901 \\
+$\tilde{\rho}$        &  0.67007  &  0.34871  & $-$47.960  &  54.429 &   0.4996 \\
+$\tilde{v}_0$ (mean)  & $-$4.15871 & $-$4.32777 & $-$4.065 &   9.422 &   0.0825 \\
+$\tilde{\nu}$         & $-$1.91844 & $-$2.77983 & $-$44.900  &  52.409 &   0.1884 \\
+$\sigma$              &  0.39104  &  0.37596  & $-$3.858  &   3.882 &   0.0046 \\
+$t_0$                 & 66.07919  & 66.95525  &    1.326  &   2.932 &   0.0261 \\
+$\sigma_{\tau}$       & 10.36347  & 10.24343  & $-$1.158  &  13.119 &   0.1335 \\
+$\sigma_{\xi}$        &  1.34546  &  1.68284  &   25.075  &  31.843 &   0.1585 \\
+$\zeta$ (mean)        & $-$0.23890 & $-$0.00673 &  97.185  & 102.854 &  12.0835 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/REE_all.png}
+  \caption{Relative error of estimation (REE) for all parameters.}
+  \label{fig:ree_all}
+\end{figure}
+
+
+\begin{table}[htbp]
+\centering
+\caption{Agreement statistics for individual random effects.}
+\begin{tabular}{lcc}
+\hline
+ & ICC(3,1) & Pearson $r$ \\
+\hline
+$\xi$  & $0.888 \pm 0.044$ & $0.910 \pm 0.031$ \\
+$\tau$ & $0.897 \pm 0.083$ & $0.912 \pm 0.063$ \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/parameters_comparison.png}
+  \caption{Scatter plots of estimated vs. true individual parameters across all repetitions. The dashed line indicates the identity line of perfect agreement.}
+  \label{fig:param_comparison}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Bland-Altman analysis of individual parameter recovery.}
+\begin{tabular}{lrrr}
+\hline
+ & Bias & LoA lower & LoA upper \\
+\hline
+$\xi$  & $0.0043$ & $-1.3839$ & $1.3925$ \\
+$\tau$ & $0.6034$ & $-7.9239$ & $9.1307$ \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/bland-altman.png}
+  \caption{Bland-Altman plots for $\xi$ (left) and $\tau$ (right). The solid line indicates the bias, and the dashed lines indicate the limits of agreement.}
+  \label{fig:bland-altman}
+\end{figure}
+
+
+\newpage
+
+\section{TBD: Preliminary Work on the Phd Subject}
+TODO
 \newpage
 
 \section{Conclusion}

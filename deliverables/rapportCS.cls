@@ -93,7 +93,7 @@
 % Dates
 {\large \dates \par} 
 
-\vspace{5cm}
+\vspace{3.5cm}
 
 % Représentants de l'étudiant
 \begin{minipage}{0.5\textwidth}

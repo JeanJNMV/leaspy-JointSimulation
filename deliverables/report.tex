@@ -32,9 +32,11 @@
 % Informations tuteurs écoles
 \tuteurecole{
     SDI: \textsc{Arthur Tenenhaus} \\
-    arthur.tenenhaus@l2s.centralesupelec.fr \\
+    arthur.tenenhaus@centralesupelec.fr \\
     FMR: \textsc{Vincent Mousseau} \\ 
-    vincent.mousseau@centralesupelec.fr
+    vincent.mousseau@centralesupelec.fr \\
+    MVA: \textsc{Raphaël Porcher} \\
+    raphael.porcher@aphp.fr
 } 
 
 \tuteurentreprise{
@@ -50,9 +52,13 @@
 
 % Abstract 
 \begin{abstract}
-        TODO\todo{ATTENTION INCLURE LES PARTIES CS}
+This internship was carried out within the ARAMIS team at the Paris Brain Institute (ICM) and focused on the development of simulation and statistical evaluation tools for Leaspy, an open-source Python library dedicated to the analysis of multivariate longitudinal data in neurodegenerative diseases. Leaspy relies on non-linear mixed-effects models to reconstruct disease progression trajectories, align patients on a common latent disease timeline, and estimate individual progression parameters from repeated clinical observations.
+
+The main objective of this work was to extend the simulation capabilities of Leaspy to its joint model, which simultaneously models longitudinal outcomes and time-to-event data through a shared latent disease age. While simulation tools already existed for the standard logistic model, no integrated implementation was available for the joint model. The internship therefore involved designing and implementing a simulation pipeline compatible with this framework, including event-time generation, management of censoring, support for competing events, and integration with the library's existing \texttt{estimate} and \texttt{simulate} interfaces.
+
+A second major contribution consisted in developing a validation framework based on repeated simulation and re-estimation, in order to assess the self-consistency of the implementation and the statistical recovery of both population and individual parameters. This evaluation made it possible to identify which parameters are robustly recovered and which remain difficult to estimate in moderate-sample regimes, especially in the survival and latent-source components of the model.
 \end{abstract}
-\newpage
+\newpage 
 
 % Table des matières 
 
@@ -62,8 +68,21 @@
 % Introduction 
 
 \section{Introduction} 
-TODO\todo{doit inclure les autres travaux au sein du labo (workshop, review, etc.) qui ne sont pas détaillés dans le rapport}
+\todo{ATTENTION INCLURE LES PARTIES CS}
 
+This end-of-studies internship was carried out from April to September 2026 at the Paris Brain Institute (Institut du Cerveau, ICM), located at the Pitié-Salpêtrière Hospital in Paris. The ICM is an internationally recognized research center dedicated to the understanding and treatment of neurological and psychiatric diseases. Its structure brings together clinicians, biologists, statisticians, computer scientists and engineers within a highly interdisciplinary environment, with the objective of fostering close interactions between methodological innovation and clinical applications.
+
+The internship took place within the ARAMIS team (Algorithms, Models and Methods for Images and Signals), a joint team between the ICM and INRIA. ARAMIS develops computational and statistical tools for the analysis of brain data, with a particular focus on modeling disease progression in neurological disorders such as Alzheimer's disease, Parkinson's disease, Huntington's disease or amyotrophic lateral sclerosis. More specifically, I joined the longitudinal modeling group, whose research focuses on non-linear mixed-effects models for multivariate longitudinal data. This group combines expertise in statistics, machine learning and neuroscience to design models capable of capturing the temporal dynamics and inter-individual heterogeneity that characterize disease progression.
+
+In this context, the internship was centered on Leaspy (LEArning Spatiotemporal Patterns in Python), an open-source Python library developed by ARAMIS and its collaborators for the statistical analysis of longitudinal clinical data. Leaspy aims at reconstructing disease trajectories from repeated patient measurements, aligning individuals onto a common disease timeline, and producing clinically interpretable quantities such as subject-specific disease stage or progression speed. The library already provides a mature implementation of several models and algorithms for fitting, personalization, trajectory estimation and, in some cases, simulation. However, as the methodological scope of Leaspy has expanded, especially with the recent development of a joint model linking longitudinal outcomes and survival data, the need for robust software tools for simulation and statistical evaluation has become increasingly important.
+
+Indeed, simulation plays a central role in the development of complex statistical models. Unlike real clinical datasets, simulated datasets provide access to the ground truth: the true parameter values and latent variables are known by construction. They therefore make it possible to assess whether an estimation procedure is unbiased, whether individual parameters are accurately recovered, and whether an implementation behaves as expected under controlled conditions. In the specific case of Leaspy, this need is even stronger because the models are non-linear, involve latent random effects, and rely on computationally intensive estimation procedures such as MCMC-SAEM. Extending simulation capabilities to the joint model and designing tools to evaluate its statistical behaviour are thus both methodological and practical priorities.
+
+The main objective of this internship was therefore to contribute to the development of simulation and statistical evaluation tools for Leaspy, with a particular focus on the joint model. Concretely, the work consisted in extending the simulation pipeline to settings involving longitudinal data jointly modeled with time-to-event outcomes, integrating these developments into the existing software architecture, and validating them through dedicated numerical experiments. Beyond the implementation effort itself, the internship also aimed at assessing the self-consistency of the model and estimation procedures through simulation-based validation studies.
+
+More broadly, this work lies at the intersection of statistical modeling, scientific computing and software engineering. Because Leaspy is an open-source research library intended to be used both by methodologists and by applied researchers, contributing to it requires not only implementing new methodological features, but also ensuring code reliability, reproducibility, usability and documentation quality. In that respect, the internship included several additional contributions that are not detailed in the core chapters of this report: reviewing pull requests submitted to the library, writing and improving unit and functional tests, improving parts of the documentation, and preparing and leading a workshop on longitudinal data with a particular emphasis on simulation within Leaspy. These activities were an important part of the internship, as they contributed to the overall robustness, maintainability and dissemination of the software.
+
+This report focuses primarily on the methodological and technical contributions related to simulation and evaluation for the joint model. It first presents the scientific and software context of the Leaspy library, as well as the motivations for simulation studies in this framework. It then introduces the joint model in more detail, describes the simulation algorithm implemented during the internship and the adaptations made within Leaspy, and finally reports a validation study designed to assess parameter recovery and the consistency of the overall pipeline. Through these developments, the internship aimed to strengthen both the methodological foundations and the practical usability of Leaspy for future research on longitudinal disease progression modeling.
 \newpage 
 
 % Sections 
@@ -256,7 +275,7 @@ so that the individual biomarker ordering pattern encoded in $\mathbf{s}_i$ acce
 
 \subsection{The Original Algorithm}
 
-In the original article describing the joint model~\cite{ortholand2025joint}, the simulation of synthetic patient cohorts under the joint model proceeds in six sequential steps, described below. This procedure generalizes the simulation workflow available in Leaspy for the logistic model to the joint setting.
+In the original article describing the joint model~\cite{ortholand2025joint}, the simulation of synthetic patient cohorts under the joint model proceeds in six sequential steps, described below. 
 
 \begin{enumerate}
   \item \textbf{Simulate individual random effects}. For each patient, draw the log-acceleration factor $\xi_i$ and time shift $\tau_i$ independently from their population distributions: $\xi_i \sim \mathcal{N}(0,\, \sigma_\xi^2), \quad
@@ -423,58 +442,57 @@ The \textit{Intraclass Correlation Coefficient} ICC(3,1), defined under the two-
 where $MS_B$ is the mean square between subjects and $MS_E$ is the mean square error, computed from the matrix whose two columns are the true and estimated values. The ICC(3,1) is the preferred agreement statistic here rather than the Pearson correlation, because Pearson's $r$ is invariant to linear rescaling: an estimator that correctly ranks individuals but applies a systematic affine shift would obtain a high $r$ while still being practically misleading. The ICC(3,1) penalises both lack of correlation and systematic offset, so that an ICC of 1 indicates exact pointwise agreement, an ICC near 0 indicates agreement no better than chance, and negative values reveal a systematic disagreement that is worse than ignoring the model entirely. Reporting ICC(3,1) alongside Pearson's $r$ therefore makes it possible to distinguish a correctly ordered but shifted estimator from one that achieves genuine agreement.
 
 The \textit{Bland-Altman analysis} provides a graphical complement to the ICC. For each individual $i$ and each repetition $m$, the difference $\hat{\theta}_i^{(m)} - \theta_i^{(m)}$ is plotted against the mean $(\hat{\theta}_i^{(m)} + \theta_i^{(m)})/2$, pooled across all $M$ repetitions. Three summary quantities are reported: the bias (mean difference), which reveals any constant over- or under-estimation; the limits of agreement $\pm 1.96\,\mathrm{SD}$, which delimit the interval capturing approximately 95\% of individual differences; and the dependence of the difference on the mean, which would indicate proportional bias. A narrow symmetric band centred on zero is the signature of an accurate and unbiased personalisation procedure.
-
+ 
 \subsection{Experimental Setup}
 
 The reference model $\theta^*$ is a joint model fitted on the PULSE dataset, with a single event ($L = 1$). The simulation study is carried out in the \textit{random} visit mode with the following study parameters: first-visit offset $\bar{\delta}_f = -2.0$ years and $\sigma_{\delta_f} = 1.0$ year; follow-up duration $\overline{T_f} = 8.0$ years and $\sigma_{T_f} = 2.0$ years; inter-visit interval $\bar{\delta}_v = 0.083$ years and $\sigma_{\delta_v} = 0.042$ years; and a minimum spacing between visits of $0.05$ years. These parameters are deliberately chosen to place each simulated cohort in favourable conditions: the short inter-visit interval and long follow-up produce a dense observation schedule, so that each patient contributes many data points. This abundance of information per individual reduces the number of MCMC-SAEM iterations required to reach convergence both at the fitting and at the personalisation stage. 
 
-Each synthetic cohort contains $N = TODO$ patients, and the experiment is repeated $M = TODO$ times. Each fresh model is fitted using the MCMC-SAEM algorithm with $N_{\mathrm{iter}} = TODO$ iterations, and the subsequent personalisation step runs for $N_{\mathrm{perso}} = TODO$ iterations. \todo{remplir les valeurs}
+Each synthetic cohort contains $N = 100$ patients, and the experiment is repeated $M = 100$ times. Each fresh model is fitted using the MCMC-SAEM algorithm with $N_{\mathrm{iter}} = 3000$ iterations, and the subsequent personalisation step runs for $N_{\mathrm{perso}} = 500$ iterations. Naturally, the computational cost of this procedure is substantial, as it requires fitting $M$ separate joint models from scratch. Better results could be obtained by increasing $N$ and $M$, but this would further increase the computational burden. The chosen values of $N$ and $M$ represent a compromise between statistical power and practical feasibility, while still providing a robust assessment of the model's self-consistency.
 
 \subsection{Results and Interpretation}
 
-\todo{remplacer par les figures finales}
+The results of the simulation study are summarised in Table~\ref{tab:population_recovery} for population parameters. The distributions of the Relative Estimation Error across the $M = 100$ repetitions are displayed in Figure~\ref{fig:ree_all}, while the quality of individual parameter recovery is examined in detail through the scatter plots of Figure~\ref{fig:param_comparison} and the Bland-Altman plots of Figure~\ref{fig:bland-altman}.
+
+\paragraph{Population parameter recovery.}
+The population reference time $t_0$ is among the best recovered parameters, with a relative bias of $0.072\%$ and a RRMSE of $2.082\%$. Its REE distribution in Figure~\ref{fig:ree_all} is centred almost exactly on zero with a tight interquartile range, indicating that it is well identified in this simulation setting. The observational noise standard deviation $\sigma$ is the most precisely estimated parameter in the study, with an RSE of $0.003$, a relative bias of $-3.897\%$, and a RRMSE of $3.910\%$. The near-equality of these last two quantities indicates that almost all the estimation error is attributable to a stable, slightly negative systematic offset rather than to variability across repetitions, a pattern visible in Figure~\ref{fig:ree_all} as a tight, uniformly sub-zero distribution. The time-shift standard deviation $\sigma_\tau$ and the trajectory parameters $\tilde{v}_0$ and $\tilde{g}$ are also well recovered, with relative biases in the range of $3.6\%$ to $7.4\%$ and RRMSEs below $11\%$; their REE distributions remain within moderate bounds across almost all repetitions, indicating that the main longitudinal sub-model parameters are reliably estimated under the dense visit schedules of this study.
+
+The log-acceleration standard deviation $\sigma_\xi$ is overestimated by $27\%$ on average, with a RRMSE of $29.8\%$ and an RSE of $0.10$. One possible explanation is that, at this sample size, part of the unexplained individual variability is absorbed into the between-subject variance, inflating the recovered population standard deviation. The Weibull survival parameters $\tilde{\nu}$ and $\tilde{\rho}$ are both underestimated, with relative biases of $-18.1\%$ and $-28.2\%$ respectively. Several plausible factors may contribute to the difficulty of identifying these parameters. First, survival data are intrinsically sparse: with $N = 100$ patients, a substantial fraction of whom are right-censored, the effective information available to the survival sub-model is far smaller than that available to the longitudinal one. Second, the two Weibull parameters may be partially compensatory in the likelihood, so that changes in scale can be offset to some extent by changes in shape, producing unstable joint estimates. Third, the shape parameter $\rho$ is generally harder to identify, as it controls the functional form of the hazard acceleration and requires observing a sufficiently broad spread of event times; the RSE of $\tilde{\rho}$ (0.443) being about four times that of $\tilde{\nu}$ (0.113) is consistent with this additional difficulty.
+
+Finally, the space-shift mixing coefficients $\beta$ and the source-to-survival coupling weights $\zeta$ present the largest relative errors, with RRMSEs of $212\%$ and $117\%$ respectively. These figures, however, must be interpreted with caution. The true mean of $\beta$ is $0.00858$, a value so close to zero that even a small absolute estimation error yields a very large relative one. The metric therefore overstates the practical difficulty of recovering this parameter. More fundamentally, both $\beta$ and $\zeta$ encode second-order effects that are difficult to separate from the dominant signal at moderate sample sizes: the space-shift coefficients require the simultaneous observation of consistent inter-biomarker ordering differences across many patients, while $\zeta$ requires resolving a systematic link between the latent source patterns $\mathbf{s}_i$ and the individual event hazard beyond the shared disease pace $e^{\xi_i}$. For $\zeta$, the combination of a very large relative bias and a very high RSE suggests substantial instability in this experimental regime. Overall, these results are consistent with known identifiability difficulties in high-dimensional joint models and would be expected to improve with larger sample sizes, although this was not evaluated here.
 
 \begin{table}[htbp]
 \centering
 \caption{Population parameter recovery metrics.}
+\label{tab:population_recovery}
 \begin{tabular}{lrrrrr}
+
+Parameter & $\theta^{*}$ (reference)& $\bar{\hat{\theta}}$ (estimate)& RB (\%) & RRMSE (\%) & RSE \\
 \hline
-Parameter & $\theta$ (true) & $\bar{\theta}$ (M) & RB (\%) & RRMSE (\%) & RSE \\
-\hline
-$\beta$ (mean)        &  0.00858  &  0.00005    & $-$99.439 & 252.612 & 418.0295 \\
-$\tilde{g}$ (mean)    &  0.49849  &  0.43662  & $-$12.412 &  14.664 &   0.0901 \\
-$\tilde{\rho}$        &  0.67007  &  0.34871  & $-$47.960  &  54.429 &   0.4996 \\
-$\tilde{v}_0$ (mean)  & $-$4.15871 & $-$4.32777 & $-$4.065 &   9.422 &   0.0825 \\
-$\tilde{\nu}$         & $-$1.91844 & $-$2.77983 & $-$44.900  &  52.409 &   0.1884 \\
-$\sigma$              &  0.39104  &  0.37596  & $-$3.858  &   3.882 &   0.0046 \\
-$t_0$                 & 66.07919  & 66.95525  &    1.326  &   2.932 &   0.0261 \\
-$\sigma_{\tau}$       & 10.36347  & 10.24343  & $-$1.158  &  13.119 &   0.1335 \\
-$\sigma_{\xi}$        &  1.34546  &  1.68284  &   25.075  &  31.843 &   0.1585 \\
-$\zeta$ (mean)        & $-$0.23890 & $-$0.00673 &  97.185  & 102.854 &  12.0835 \\
+$\beta$ (mean)            & 0.00858  & 0.00107  & -87.535 & 212.287 & 15.5936 \\
+$\tilde{g}$ (mean)        & 0.49849  & 0.46148  & -7.424  & 10.373  & 0.0786 \\
+$\tilde{\rho}$            & 0.67007  & 0.48141  & -28.155 & 42.351  & 0.4426 \\
+$\tilde{v}_0$ (mean)      & -4.15871 & -4.44446 & -6.871  & 8.690   & 0.0500 \\
+$\tilde{\nu}$             & -1.91844 & -2.26636 & -18.135 & 22.449  & 0.1126 \\
+$\sigma$                  & 0.39104  & 0.37580  & -3.897  & 3.910   & 0.0033 \\
+$t_0$                     & 66.07919 & 66.12698 & 0.072   & 2.082   & 0.0209 \\
+$\sigma_{\tau}$           & 10.36347 & 9.99169  & -3.587  & 7.826   & 0.0725 \\
+$\sigma_{\xi}$            & 1.34546  & 1.70900  & 27.020  & 29.809  & 0.0996 \\
+$\zeta$ (mean)            & -0.23890 & -0.01580 & 93.387  & 116.725 & 10.6431 \\
 \hline
 \end{tabular}
 \end{table}
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\textwidth]{figures/REE_all.png}
+  \includegraphics[width=0.7\textwidth]{figures/REE_all.png}
   \caption{Relative error of estimation (REE) for all parameters.}
   \label{fig:ree_all}
 \end{figure}
 
+\paragraph{Individual random effect recovery.}
+Figures~\ref{fig:param_comparison} and~\ref{fig:bland-altman} together provide a detailed assessment of individual parameter recovery by the personalisation algorithm. The ICC(3,1) values, averaged across the $M = 100$ repetitions, are $0.894 \pm 0.026$ for $\xi$ and $0.903 \pm 0.050$ for $\tau$. Both values indicate strong absolute agreement between the personalised and simulated parameters, well above the conventional threshold of $0.75$ for good agreement. The slightly higher standard deviation of the ICC for $\tau$ across repetitions (0.050 versus 0.026 for $\xi$) suggests that the recovery of the time shift is somewhat more sensitive to the particular realisation of the synthetic cohort. In both cases, the Pearson correlation modestly exceeds the ICC ($0.912 \pm 0.021$ versus $0.894 \pm 0.026$ for $\xi$; $0.916 \pm 0.038$ versus $0.903 \pm 0.050$ for $\tau$), a systematic gap that is consistent across repetitions and indicates a mild distortion between true and estimated values that the ICC penalises but the Pearson correlation ignores.
 
-\begin{table}[htbp]
-\centering
-\caption{Agreement statistics for individual random effects.}
-\begin{tabular}{lcc}
-\hline
- & ICC(3,1) & Pearson $r$ \\
-\hline
-$\xi$  & $0.888 \pm 0.044$ & $0.910 \pm 0.031$ \\
-$\tau$ & $0.897 \pm 0.083$ & $0.912 \pm 0.063$ \\
-\hline
-\end{tabular}
-\end{table}
+This distortion is made explicit in Figure~\ref{fig:param_comparison}. For $\xi$, the linear regression line is slightly steeper than the identity line, indicating that the personalisation algorithm marginally amplifies the true spread: patients with strongly positive or negative log-accelerations tend to receive estimates that are somewhat more extreme than their true values. This pattern is consistent with the upward bias in $\hat{\sigma}_{\xi}$ documented above: if the fitted prior variance is overestimated, the posterior regularisation is weaker than it should be, producing less shrinkage toward zero and a correspondingly expanded distribution of estimated log-accelerations. For $\tau$, the regression line is shallower than the identity, revealing the classic shrinkage pattern toward the prior mean: patients with a very early true disease onset tend to have their onset underestimated, while patients with a very late onset tend to have it overestimated. This is the expected consequence of Bayesian estimation under a Gaussian prior centred near the population mean; when the individual longitudinal data are not sufficiently informative to dominate the prior, the posterior is pulled back toward that central value.
 
 \begin{figure}[htbp]
   \centering
@@ -483,18 +501,7 @@ $\tau$ & $0.897 \pm 0.083$ & $0.912 \pm 0.063$ \\
   \label{fig:param_comparison}
 \end{figure}
 
-\begin{table}[htbp]
-\centering
-\caption{Bland-Altman analysis of individual parameter recovery.}
-\begin{tabular}{lrrr}
-\hline
- & Bias & LoA lower & LoA upper \\
-\hline
-$\xi$  & $0.0043$ & $-1.3839$ & $1.3925$ \\
-$\tau$ & $0.6034$ & $-7.9239$ & $9.1307$ \\
-\hline
-\end{tabular}
-\end{table}
+The Bland-Altman plots in Figure~\ref{fig:bland-altman} confirm and refine these observations. For $\xi$, the bias is $-0.007$, negligible in absolute terms, and the limits of agreement are $[-1.350, +1.336]$. For $\tau$, the bias is $+0.061$ years, again negligible relative to the scale of $\sigma_\tau \approx 10$ years, and the limits of agreement span approximately $[-8.4, +8.5]$ years. For both parameters, the mean bias is therefore close to zero, indicating little overall offset at the population level. At the same time, the structure of the point clouds shows that this absence of global bias does not imply perfect agreement at all values. In particular, the Bland-Altman plot for $\tau$ displays a marked mean-dependent pattern consistent with the shrinkage already visible in Figure~\ref{fig:param_comparison}: extreme time shifts tend to be pulled back toward the centre of the distribution. The near-symmetry of the limits of agreement around zero confirms that the personalisation procedure does not introduce a large systematic offset on average, while the residual structure of the plots reveals conditional bias, especially for $\tau$.
 
 \begin{figure}[htbp]
   \centering
@@ -511,7 +518,18 @@ TODO
 \newpage
 
 \section{Conclusion}
-TODO
+
+This internship addressed a central methodological and software challenge for the Leaspy library: providing simulation and evaluation tools for complex non-linear mixed-effects models, and more specifically for the joint model linking longitudinal and survival data. In a context where real clinical datasets never provide access to the true latent disease stage or to the true individual random effects, simulation constitutes an indispensable instrument both for validating statistical procedures and for testing software implementations under controlled conditions.
+
+The main contribution of this work was the development and integration of a simulation pipeline for the joint model within the Leaspy codebase. This required extending the existing logic of the library to support the generation of event times alongside longitudinal trajectories, handling censoring constraints, adapting the \texttt{estimate} method to return survival-related quantities, and generalizing the framework to competing events. These developments made it possible to simulate synthetic cohorts in a way that is coherent with the mathematical structure of the joint model and with the design principles of the Leaspy API.
+
+A second important contribution was the implementation of a simulation-based validation strategy aimed at evaluating the self-consistency of the full pipeline. By repeatedly simulating datasets from a reference fitted model and re-estimating the parameters, the study assessed the recovery of both population parameters and personalized individual random effects. The results show that the main longitudinal parameters and the subject-level time-shift and acceleration effects are recovered with good accuracy in the considered setting. At the same time, some parameters related to survival and latent-source couplings exhibit substantially larger estimation errors, highlighting the practical difficulties of identifying second-order effects in moderately sized cohorts. These findings are informative not only for the specific implementation developed during the internship, but also more generally for the statistical use of the joint model.
+
+Beyond the work described in detail in this report, the internship also involved a broader contribution to the life of the project: reviewing pull requests, strengthening the test suite with unit and functional tests, improving parts of the documentation, and preparing and leading a workshop on longitudinal data, with a particular focus on simulation. These activities were essential to ensure that the developed features are not only methodologically relevant, but also maintainable, documented and usable by other contributors and end users.
+
+Overall, this internship provided an opportunity to work at the interface between statistics, machine learning and scientific software engineering, in a highly interdisciplinary research environment. It also illustrated a key aspect of modern methodological research: proposing a model is not sufficient; one must also provide the computational tools, validation procedures and software standards that make its use reliable and reproducible. In that respect, the work carried out during these six months contributes to making Leaspy a more robust and more complete platform for longitudinal disease progression modeling.
+
+Several perspectives naturally follow from this work. On the methodological side, future simulation studies could investigate more systematically the effect of sample size, censoring intensity, visit sparsity, or model misspecification on parameter recovery. On the software side, the simulation framework could be extended further, for instance by allowing more flexible visit-generation schemes, richer noise models, or closer alignment between continuous-time event generation and the current grid-based implementation. More broadly, the tools developed here may support future benchmarking studies, educational uses, and the generation of privacy-preserving synthetic datasets for open research. These perspectives make simulation not only a technical feature of Leaspy, but also a strategic component of its future development.
 \newpage
 
 % Bibliography 

@@ -10,6 +10,7 @@ logs/
 latex_output/
 err/
 out/
+notes/info_datasets.md
 
 # Temporary and backup files
 *copy*
@@ -18,3 +19,4 @@ old/
 notebooks/tutorials/
 tmp/
 tmp*/
+scripts/

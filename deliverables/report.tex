@@ -19,7 +19,7 @@
 
 \logoentreprise{logos/logoICM.png} %Logo de l'entreprise
 
-\titre{Developping simulation and statistical evaluation tools for a non-linear mixed-effect models}
+\titre{Developing simulation and statistical evaluation tools for a non-linear mixed-effect model}
 
 \mention{CentraleSupélec - Mention Sciences des données et de l'information \& Filière Métiers de la Recherche}
 \master{Master MVA} % Nom du master
@@ -50,6 +50,8 @@
 \fairepagedegarde %Créer la page de garde
 \setcounter{figure}{0}
 
+\todo{INCLURE LES PARTIES CS: RECUL ETHIQUE, GRILLE DE COMPETENCES, REMERCIEMENTS, etc.}
+
 % Abstract 
 \begin{abstract}
 This internship was carried out within the ARAMIS team at the Paris Brain Institute (ICM) and focused on the development of simulation and statistical evaluation tools for Leaspy, an open-source Python library dedicated to the analysis of multivariate longitudinal data in neurodegenerative diseases. Leaspy relies on non-linear mixed-effects models to reconstruct disease progression trajectories, align patients on a common latent disease timeline, and estimate individual progression parameters from repeated clinical observations.
@@ -68,7 +70,6 @@ A second major contribution consisted in developing a validation framework based
 % Introduction 
 
 \section{Introduction} 
-\todo{ATTENTION INCLURE LES PARTIES CS}
 
 This end-of-studies internship was carried out from April to September 2026 at the Paris Brain Institute (Institut du Cerveau, ICM), located at the Pitié-Salpêtrière Hospital in Paris. The ICM is an internationally recognized research center dedicated to the understanding and treatment of neurological and psychiatric diseases. Its structure brings together clinicians, biologists, statisticians, computer scientists and engineers within a highly interdisciplinary environment, with the objective of fostering close interactions between methodological innovation and clinical applications.
 
@@ -448,9 +449,10 @@ The \textit{Bland-Altman analysis} provides a graphical complement to the ICC. F
 The reference model $\theta^*$ is a joint model fitted on the PULSE dataset, with a single event ($L = 1$). The simulation study is carried out in the \textit{random} visit mode with the following study parameters: first-visit offset $\bar{\delta}_f = -2.0$ years and $\sigma_{\delta_f} = 1.0$ year; follow-up duration $\overline{T_f} = 8.0$ years and $\sigma_{T_f} = 2.0$ years; inter-visit interval $\bar{\delta}_v = 0.083$ years and $\sigma_{\delta_v} = 0.042$ years; and a minimum spacing between visits of $0.05$ years. These parameters are deliberately chosen to place each simulated cohort in favourable conditions: the short inter-visit interval and long follow-up produce a dense observation schedule, so that each patient contributes many data points. This abundance of information per individual reduces the number of MCMC-SAEM iterations required to reach convergence both at the fitting and at the personalisation stage. 
 
 Each synthetic cohort contains $N = 100$ patients, and the experiment is repeated $M = 100$ times. Each fresh model is fitted using the MCMC-SAEM algorithm with $N_{\mathrm{iter}} = 3000$ iterations, and the subsequent personalisation step runs for $N_{\mathrm{perso}} = 500$ iterations. Naturally, the computational cost of this procedure is substantial, as it requires fitting $M$ separate joint models from scratch. Better results could be obtained by increasing $N$ and $M$, but this would further increase the computational burden. The chosen values of $N$ and $M$ represent a compromise between statistical power and practical feasibility, while still providing a robust assessment of the model's self-consistency.
+\todo{changer avec les nouveaux résultats}
 
 \subsection{Results and Interpretation}
-
+\todo{changer avec les nouveaux résultats}
 The results of the simulation study are summarised in Table~\ref{tab:population_recovery} for population parameters. The distributions of the Relative Estimation Error across the $M = 100$ repetitions are displayed in Figure~\ref{fig:ree_all}, while the quality of individual parameter recovery is examined in detail through the scatter plots of Figure~\ref{fig:param_comparison} and the Bland-Altman plots of Figure~\ref{fig:bland-altman}.
 
 \paragraph{Population parameter recovery.}

@@ -1,4 +1,4 @@
-\LoadClass[a4paper,12pt]{article} % Classe du document
+\LoadClass[a4paper,11pt]{article} % Classe du document
 
 %--------------------- Packages ------------------------
 

@@ -1,6 +1,8 @@
 # System and IDE files
 .vscode/
 .DS_Store
+.venv/
+__pycache__/
 
 # Data and results
 _outputs/
@@ -14,9 +16,7 @@ notes/info_datasets.md
 
 # Temporary and backup files
 *copy*
-*test*
 old/
 notebooks/tutorials/
 tmp/
 tmp*/
-scripts/

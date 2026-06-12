@@ -7,22 +7,34 @@
 #SBATCH --output=out/launcher_%j.out
 #SBATCH --error=err/launcher_%j.err
 
-# Usage:  sbatch scripts/launch_slurm.sh <N> <M> <N_ITER> <N_PERSO>
-# Example: sbatch scripts/launch_slurm.sh 200 20 10000 1000
+# Usage:  sbatch scripts/launch_slurm.sh <MODEL> <N> <M> <N_ITER> <N_PERSO>
+# Example: sbatch scripts/launch_slurm.sh PULSE_JOINT_100_ALSFRS_BMI_VC_MUSC_NFL_SNIP_10 200 20 10000 1000
+#
+# MODEL is the filename (with or without .json) inside ./models/
 
 set -euo pipefail
 
-N=${1:?"Usage: sbatch scripts/launch_slurm.sh N M N_ITER N_PERSO"}
-M=${2:?}
-N_ITER=${3:?}
-N_PERSO=${4:?}
+MODEL=${1:?"Usage: sbatch scripts/launch_slurm.sh MODEL N M N_ITER N_PERSO"}
+N=${2:?}
+M=${3:?}
+N_ITER=${4:?}
+N_PERSO=${5:?}
+
+# Strip .json if the user passed it, for clean tag names
+MODEL_STEM="${MODEL%.json}"
 
 WORKDIR=/network/iss/home/jv.martini/leaspy-Joint_Model_Simu-Eval
 cd "$WORKDIR"
 mkdir -p out err
 
+# Verify the model file exists before submitting anything
+if [[ ! -f "${WORKDIR}/models/${MODEL_STEM}.json" ]]; then
+    echo "ERROR: Model file not found: ${WORKDIR}/models/${MODEL_STEM}.json"
+    exit 1
+fi
+
 LAST_TASK=$((M - 1))
-TAG="N${N}_M${M}_Niter${N_ITER}_Nperso${N_PERSO}"
+TAG="${MODEL_STEM}_N${N}_M${M}_Niter${N_ITER}_Nperso${N_PERSO}"
 
 # ── 1. Array job ──────────────────────────────────────────────────────────────
 ARRAY_JOB=$(sbatch --parsable \
@@ -41,6 +53,7 @@ ARRAY_JOB=$(sbatch --parsable \
         source .venv/bin/activate || { echo 'ERROR: venv activation failed'; exit 1; }
         echo \"Config: ${TAG}  |  Task: \${SLURM_ARRAY_TASK_ID}  |  Started: \$(date)\"
         python -u scripts/simu_test_parallel.py \
+            --model ${MODEL_STEM} \
             --N ${N} --M ${M} --N-iter ${N_ITER} --N-perso ${N_PERSO}
         echo \"Task finished at: \$(date)\"
     ")
@@ -63,6 +76,7 @@ AGG_JOB=$(sbatch --parsable \
         source .venv/bin/activate || { echo 'ERROR: venv activation failed'; exit 1; }
         echo \"Aggregating ${TAG} — \$(date)\"
         python -u scripts/simu_test_parallel.py \
+            --model ${MODEL_STEM} \
             --N ${N} --M ${M} --N-iter ${N_ITER} --N-perso ${N_PERSO} --aggregate
         echo \"Done — \$(date)\"
     ")

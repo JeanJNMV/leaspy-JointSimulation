@@ -14,16 +14,16 @@ from leaspy.models import JointModel
 warnings.filterwarnings("ignore", category=UserWarning)
 
 # ── Constants (never change between runs) ─────────────────────────────────────
-NB_EVENTS      = 1
-REF_MODEL_PATH = os.path.join(
-    ".", "models", "PULSE_JOINT_100_ALSFRS_BMI_VC_MUSC_NFL_SNIP_10.json"
-)
-SAVE_DIR = os.path.join(".", "output")
+NB_EVENTS = 1
+MODELS_DIR = os.path.join(".", "models")
+SAVE_DIR   = os.path.join(".", "output")
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 def parse_args():
     p = argparse.ArgumentParser(description="Joint-model simulation study")
+    p.add_argument("--model",   type=str, required=True,
+                   help="Model filename (with or without .json) inside ./models/")
     p.add_argument("--N",       type=int, required=True, help="Patients per simulation")
     p.add_argument("--M",       type=int, required=True, help="Number of simulations")
     p.add_argument("--N-iter",  type=int, required=True, help="MCMC-SAEM iterations")
@@ -36,18 +36,30 @@ def parse_args():
 
 
 # ── Path helpers ──────────────────────────────────────────────────────────────
-def _base_stem(N, M, N_ITER, N_PERSO):
-    model_stem = os.path.basename(REF_MODEL_PATH).replace(".json", "")
-    return f"{model_stem}_N={N}_M={M}_Niter={N_ITER}_Nperso={N_PERSO}"
+def _model_path(model_name):
+    """Return the full path to the model JSON file."""
+    stem = model_name.replace(".json", "")
+    return os.path.join(MODELS_DIR, stem + ".json")
 
 
-def _task_path(N, M, N_ITER, N_PERSO, m):
+def _base_stem(model_name, N, M, N_ITER, N_PERSO):
+    stem = os.path.basename(model_name).replace(".json", "")
+    return f"{stem}_N={N}_M={M}_Niter={N_ITER}_Nperso={N_PERSO}"
+
+
+def _task_path(model_name, N, M, N_ITER, N_PERSO, m):
     ndigits = len(str(M - 1))
-    return os.path.join(SAVE_DIR, f"{_base_stem(N, M, N_ITER, N_PERSO)}_task{m:0{ndigits}d}.pkl")
+    return os.path.join(
+        SAVE_DIR,
+        f"{_base_stem(model_name, N, M, N_ITER, N_PERSO)}_task{m:0{ndigits}d}.pkl",
+    )
 
 
-def _aggregate_path(N, M, N_ITER, N_PERSO):
-    return os.path.join(SAVE_DIR, f"{_base_stem(N, M, N_ITER, N_PERSO)}.pkl")
+def _aggregate_path(model_name, N, M, N_ITER, N_PERSO):
+    return os.path.join(
+        SAVE_DIR,
+        f"{_base_stem(model_name, N, M, N_ITER, N_PERSO)}.pkl",
+    )
 
 
 # ── Atomic pickle I/O ────────────────────────────────────────────────────────
@@ -81,8 +93,9 @@ def safe_pickle_load(path):
 
 
 # ── Single simulation ─────────────────────────────────────────────────────────
-def run_single(m, N, M, N_ITER, N_PERSO):
-    out_path = _task_path(N, M, N_ITER, N_PERSO, m)
+def run_single(m, model_name, N, M, N_ITER, N_PERSO):
+    ref_model_path = _model_path(model_name)
+    out_path = _task_path(model_name, N, M, N_ITER, N_PERSO, m)
 
     # Skip only if the existing file is actually readable
     if os.path.exists(out_path):
@@ -92,8 +105,12 @@ def run_single(m, N, M, N_ITER, N_PERSO):
         print(f"[m={m}] Existing file corrupted — re-running")
 
     # Load reference model (per-task, so no cross-process state sharing)
-    ref_model = JointModel.load(REF_MODEL_PATH)
+    ref_model = JointModel.load(ref_model_path)
     features  = ref_model.features
+    
+    # Extract observation model configuration to ensure new models match reference
+    obs_model_y = ref_model.obs_models[0]
+    obs_model_name = obs_model_y.to_string()
 
     visit_params = {
         "patient_number": N,
@@ -102,12 +119,12 @@ def run_single(m, N, M, N_ITER, N_PERSO):
         "first_visit_std":  1.0,
         "time_follow_up_mean": 6.0,
         "time_follow_up_std":  2.0,
-        "distance_visit_mean": 0.083 * 3,
+        "distance_visit_mean": 0.083,
         "distance_visit_std":  0.042,
         "min_spacing_between_visits": 0.05,
-    } 
+    }
 
-    print(f"[m={m}] Simulating (N={N}) …")
+    print(f"[m={m}] Simulating (N={N}, model={model_name}) …")
     np.random.seed(m)
     torch.manual_seed(m)
 
@@ -132,7 +149,6 @@ def run_single(m, N, M, N_ITER, N_PERSO):
     true_ip_df.index = true_ip_df.index.map(lambda x: x.zfill(_n_digits))
 
     # Oracle: personalise with the TRUE reference model (known θ).
-    # Gives the irreducible lower-bound on IP recovery error.
     ref_ip_df = None
     try:
         ref_ip    = ref_model.personalize(sim_data, "mean_posterior",
@@ -143,7 +159,13 @@ def run_single(m, N, M, N_ITER, N_PERSO):
         print(f"[m={m}] Oracle personalisation failed: {exc}")
 
     # Fit
-    new_model = JointModel(name=f"m{m}", nb_events=ref_model.nb_events, source_dimension=ref_model.source_dimension)
+    new_model = JointModel(
+        name=f"m{m}",
+        nb_events=ref_model.nb_events,
+        dimension=ref_model.dimension,
+        source_dimension=ref_model.source_dimension,
+        obs_models=obs_model_name,
+    )
     try:
         new_model.fit(sim_data, "mcmc_saem",
                       seed=1000 + m, n_iter=N_ITER, progress_bar=True)
@@ -175,13 +197,13 @@ def run_single(m, N, M, N_ITER, N_PERSO):
 
 
 # ── Aggregation ───────────────────────────────────────────────────────────────
-def aggregate(N, M, N_ITER, N_PERSO):
-    agg_path = _aggregate_path(N, M, N_ITER, N_PERSO)
+def aggregate(model_name, N, M, N_ITER, N_PERSO):
+    agg_path = _aggregate_path(model_name, N, M, N_ITER, N_PERSO)
     results  = {"pop_params": [], "true_ips": [], "ref_ips": [], "est_ips": []}
     n_ok = 0
 
     for m in range(M):
-        path = _task_path(N, M, N_ITER, N_PERSO, m)
+        path = _task_path(model_name, N, M, N_ITER, N_PERSO, m)
         if not os.path.exists(path):
             print(f"[aggregate] Missing m={m}: {path}")
             results["pop_params"].append(None)
@@ -191,7 +213,7 @@ def aggregate(N, M, N_ITER, N_PERSO):
             continue
 
         r = safe_pickle_load(path)
-        if r is None:                          # corrupt / truncated
+        if r is None:
             results["pop_params"].append(None)
             results["true_ips"].append(None)
             results["ref_ips"].append(None)
@@ -200,7 +222,7 @@ def aggregate(N, M, N_ITER, N_PERSO):
 
         results["pop_params"].append(r["pop_params"])
         results["true_ips"].append(r["true_ip"])
-        results["ref_ips"].append(r.get("ref_ip"))  # .get() for backward-compat
+        results["ref_ips"].append(r.get("ref_ip"))
         results["est_ips"].append(r["est_ip"])
         n_ok += 1
 
@@ -210,14 +232,20 @@ def aggregate(N, M, N_ITER, N_PERSO):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    args    = parse_args()
-    N       = args.N
-    M       = args.M
-    N_ITER  = args.N_iter
-    N_PERSO = args.N_perso
+    args       = parse_args()
+    MODEL_NAME = args.model
+    N          = args.N
+    M          = args.M
+    N_ITER     = args.N_iter
+    N_PERSO    = args.N_perso
+
+    # Verify model file exists early
+    ref_model_path = _model_path(MODEL_NAME)
+    if not os.path.isfile(ref_model_path):
+        raise FileNotFoundError(f"Model file not found: {ref_model_path}")
 
     if args.aggregate:
-        aggregate(N, M, N_ITER, N_PERSO)
+        aggregate(MODEL_NAME, N, M, N_ITER, N_PERSO)
     else:
         task_id = args.task_id
         if task_id is None:
@@ -228,19 +256,19 @@ if __name__ == "__main__":
         if task_id is not None:
             # ── HPC array-task mode ───────────────────────────────────────
             if task_id == 0:
-                ref = JointModel.load(REF_MODEL_PATH)
-                print("True parameters θ (reference model):")
+                ref = JointModel.load(ref_model_path)
+                print(f"True parameters θ (model: {MODEL_NAME}):")
                 for k, v in ref.parameters.items():
                     print(f"  {k:25s}: "
                           f"{np.atleast_1d(v.detach().cpu().numpy()).tolist()}")
-            run_single(task_id, N, M, N_ITER, N_PERSO)
+            run_single(task_id, MODEL_NAME, N, M, N_ITER, N_PERSO)
         else:
             # ── Local sequential fallback ─────────────────────────────────
-            ref = JointModel.load(REF_MODEL_PATH)
-            print("True parameters θ (reference model):")
+            ref = JointModel.load(ref_model_path)
+            print(f"True parameters θ (model: {MODEL_NAME}):")
             for k, v in ref.parameters.items():
                 print(f"  {k:25s}: "
                       f"{np.atleast_1d(v.detach().cpu().numpy()).tolist()}")
             for m_idx in range(M):
-                run_single(m_idx, N, M, N_ITER, N_PERSO)
-            aggregate(N, M, N_ITER, N_PERSO)
+                run_single(m_idx, MODEL_NAME, N, M, N_ITER, N_PERSO)
+            aggregate(MODEL_NAME, N, M, N_ITER, N_PERSO)

@@ -134,6 +134,8 @@ which decomposes in log-space as
 
 Because this integral is intractable in closed form, Leaspy employs the MCMC-SAEM algorithm (Markov Chain Monte Carlo Stochastic Approximation Expectation-Maximization)~\cite{kuhn2005maximum}. This algorithm alternates between (i) a stochastic approximation step that uses Gibbs sampling to draw latent variables conditional on current parameter estimates, and (ii) a maximization step that re-estimates fixed effects and variance components from the updated sufficient statistics.
 
+Observed scores are further modelled with additive noise of standard deviation $\sigma$, a population parameter estimated jointly with the trajectory parameters.
+
 \subsubsection{Riemannian Geometry of Disease Progression}
 
 A key innovation of Leaspy is the interpretation of disease progression within a Riemannian geometric framework~\cite{schiratti2017bayesian}. The core idea is to represent the multivariate progression of clinical markers as a geodesic on a product Riemannian manifold, where the shape of the curve is entirely determined by the choice of the metric $G(p)$. 
@@ -157,7 +159,7 @@ which transforms the calendar age $t$ of patient $i$ into a disease-stage age. T
 
 \subsection{Main Models}
 
-\paragraph{Logistic Model.} The logistic model is the core model of Leaspy, designed for multivariate longitudinal data whose components exhibit sigmoidal (bounded, monotone) progressions, typical of cognitive scores or normalized biomarkers. Such S-shaped trajectories naturally capture the characteristic three-phase pattern observed in many neurodegenerative diseases: an initial slow deterioration when the disease is subclinical, a rapid inflection phase corresponding to the onset of clinically detectable decline, and a final plateau as scores approach their floor or ceiling values. Observed scores are further modelled with additive noise of standard deviation $\sigma$, a population parameter estimated jointly with the trajectory parameters.
+\paragraph{Logistic Model.} The logistic model is the core model of Leaspy, designed for multivariate longitudinal data whose components exhibit sigmoidal (bounded, monotone) progressions, typical of cognitive scores or normalized biomarkers. Such S-shaped trajectories naturally capture the characteristic three-phase pattern observed in many neurodegenerative diseases: an initial slow deterioration when the disease is subclinical, a rapid inflection phase corresponding to the onset of clinically detectable decline, and a final plateau as scores approach their floor or ceiling values. 
 
 \paragraph{Joint Model.} The joint model~\cite{ortholand2025joint} extends the logistic model to simultaneously analyze longitudinal measurements and time-to-event data (survival, clinical events, competing risks). Rather than treating these processes separately, which can lead to biases from informative dropout, the joint model links them through the shared latent disease age $\psi_i(t)$, avoiding the need to define an explicit disease reference time. It is on this model that the simulation and evaluation tools developed in this work are focused.
 

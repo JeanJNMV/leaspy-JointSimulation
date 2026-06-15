@@ -60,6 +60,19 @@ The main objective of this work was to extend the simulation capabilities of Lea
 
 A second major contribution consisted in developing a validation framework based on repeated simulation and re-estimation, in order to assess the self-consistency of the implementation and the statistical recovery of both population and individual parameters. This evaluation made it possible to identify which parameters are robustly recovered and which remain difficult to estimate in moderate-sample regimes, especially in the survival and latent-source components of the model.
 \end{abstract}
+
+
+\begingroup
+\renewcommand{\abstractname}{CS ONLY: Résumé}
+\begin{abstract}
+Ce stage a été réalisé au sein de l’équipe ARAMIS de l’Institut du Cerveau (ICM) et a porté sur le développement d’outils de simulation et d’évaluation statistique pour Leaspy, une bibliothèque Python open source dédiée à l’analyse de données longitudinales multivariées dans le contexte des maladies neurodégénératives. Leaspy s’appuie sur des modèles mixtes non linéaires afin de reconstruire des trajectoires de progression, d’aligner les patients sur une échelle temporelle latente commune (âge de maladie) et d’estimer des paramètres individuels de progression à partir d’observations cliniques répétées.
+
+L’objectif principal du travail a été d’étendre les capacités de simulation de Leaspy à son modèle conjoint, qui décrit simultanément l’évolution longitudinale des variables cliniques et des données de temps avant événement via une variable latente partagée. Alors que des outils de simulation existaient déjà pour le modèle logistique standard, aucune implémentation intégrée n’était disponible pour le modèle conjoint. Le stage a ainsi consisté à concevoir et implémenter une chaîne de simulation compatible avec ce cadre, incluant la génération des temps d’événement, la prise en compte de la censure, le support d’événements concurrents, ainsi que l’intégration avec les fonctions \texttt{estimate} et \texttt{simulate} de la bibliothèque.
+
+Une seconde contribution majeure a été le développement d’un cadre de validation basé sur des cycles répétés de simulation puis de ré-estimation, afin de vérifier l’auto-cohérence de l’implémentation et la capacité du modèle à retrouver les paramètres de population et individuels. Cette évaluation a permis d’identifier les paramètres estimés de manière robuste et ceux plus difficiles à récupérer en régime d’effectifs modérés, en particulier dans les composantes de survie et de sources latentes du modèle.
+\end{abstract}
+\endgroup
+
 \newpage 
 
 \section*{Acknowledgements}   

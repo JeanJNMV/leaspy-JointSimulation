@@ -18,7 +18,7 @@ In addition, a set of notebooks is provided in this repository to test the algor
 | 1 | [Base test](notebooks/1.%20Base%20test.ipynb) | End-to-end demonstration of joint simulation: loads the built-in simulated dataset, fits a `JointModel`, runs `JointSimulationAlgorithm` to generate new patient trajectories and survival events, and visualizes the output with UMAP. |
 | 2 | [Metrics](notebooks/2.%20Metrics.ipynb) | Statistical evaluation of simulation quality against the original reference dataset, using Wasserstein distance, Kolmogorov-Smirnov tests, Kaplan-Meier survival curves, visit-count distributions, and feature-trajectory correlations. Requires access to the original data. |
 | 2a | [Wout data](notebooks/2a.%20Wout%20data.ipynb) | Same statistical evaluation as notebook 2, adapted for settings where the original reference data is unavailable. Assesses intrinsic properties of the simulated output (survival curves, visit distributions, trajectory density estimates) across multiple simulation runs. |
-| 3 | [Paper's Pipeline](notebooks/3.%20Paper's%20Pipeline.ipynb) | Reproduces the simulation study from Ortholand et al. (2025). Repeatedly simulates datasets from a reference model, re-fits a fresh `JointModel` on each, and measures population-parameter recovery accuracy using REE (Relative Estimation Error), ICC (Intraclass Correlation Coefficient), etc. |
+| 3 | [Paper's Pipeline](notebooks/3.%20Paper's%20Pipeline.ipynb) | Reproduces the simulation study from Ortholand et al. (2025). Repeatedly simulates datasets from a reference model, re-fits a fresh `JointModel` on each, and measures population-parameter and individual-level parameter recovery using REE, RRMSE, ICC, etc. |
 
 ## Project Structure
 
@@ -32,6 +32,8 @@ In addition, a set of notebooks is provided in this repository to test the algor
 ├── notes/
 └── README.md
 ```
+
+A `cluster` branch is also available in the repository, containing code for parallelized simulation and fitting across multiple processes on a HPC cluster, as used in the paper's pipeline notebook.
 
 ## Reference
 

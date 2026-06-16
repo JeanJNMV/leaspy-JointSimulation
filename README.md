@@ -1,4 +1,4 @@
-# Developping simulation and statistical evaluation tools for a non-linear mixed-effect models
+# Developing simulation and statistical evaluation tools for a non-linear mixed-effect model
 
 The code used for tests and communication during my internship at Paris Brain Institut (ICM) - INRIA ARAMIS Laboratory on the software [leaspy](https://github.com/aramis-lab/leaspy). The associated pull request is [Add Simulation Algo for Joint Model](https://github.com/aramis-lab/leaspy/pull/499). This internship fulfills the academic requirements for the MVA Master’s program at ENS Paris-Saclay and CentraleSupélec.
 
@@ -7,6 +7,7 @@ In the leaspy branch associated with this pull request, you can find:
 - `JointSimulationAlgorithm` which inherits from `SimulationAlgorithm`.
 - Added unit tests for `JointSimulationAlgorithm`.
 - Adapted `estimate()` to work with the joint model and properly handle the events. It is used in `JointSimulationAlgorithm`.
+- `Plotting.patient_trajectories` extended to also plot the event time as a vertical line.
 - Added functional tests for this new `estimate`.
 
 In addition, a set of notebooks is provided in this repository to test the algorithm and evaluate the metrics used to compare the simulated data to the real data. These notebooks are intended to be used for communication and demonstration purposes, and they can be adapted for further testing and evaluation of the joint simulation algorithm.

@@ -7,8 +7,8 @@ In the leaspy branch associated with this pull request, you can find:
 - `JointSimulationAlgorithm` which inherits from `SimulationAlgorithm`.
 - Added unit tests for `JointSimulationAlgorithm`.
 - Adapted `estimate()` to work with the joint model and properly handle the events. It is used in `JointSimulationAlgorithm`.
+- Added functional tests for this new `estimate()`.
 - `Plotting.patient_trajectories` extended to also plot the event time as a vertical line.
-- Added functional tests for this new `estimate`.
 
 In addition, a set of notebooks is provided in this repository to test the algorithm and evaluate the metrics used to compare the simulated data to the real data. These notebooks are intended to be used for communication and demonstration purposes, and they can be adapted for further testing and evaluation of the joint simulation algorithm.
 

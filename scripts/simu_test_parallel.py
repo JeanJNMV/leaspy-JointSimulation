@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ── Constants (never change between runs) ─────────────────────────────────────
 NB_EVENTS = 1
 MODELS_DIR = os.path.join(".", "models")
-SAVE_DIR   = os.path.join(".", "output")
+SAVE_DIR   = os.path.join("/network/iss/aramis/users/jv.martini", "output")
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ def safe_pickle_load(path):
         with open(path, "rb") as f:
             return pickle.load(f)
     except Exception as exc:
-        print(f"  ⚠ corrupt/truncated file {path}: {exc}")
+        print(f"corrupt/truncated file {path}: {exc}")
         return None
 
 

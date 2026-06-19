@@ -10,13 +10,16 @@ logs/
 latex_output/
 err/
 out/
-notes/info_datasets.md
 
 # Temporary and backup files
 *copy*
 *test*
 old/
-notebooks/tutorials/
 tmp/
 tmp*/
+
+# Other
 scripts/
+notebooks/tutorials/
+notes/info_datasets.md
+notes/plan_workshop.md

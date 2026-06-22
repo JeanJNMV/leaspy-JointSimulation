@@ -174,7 +174,7 @@ which transforms the calendar age $t$ of patient $i$ into a disease-stage age. T
 
 \paragraph{Logistic Model.} The logistic model is the core model of Leaspy, designed for multivariate longitudinal data whose components exhibit sigmoidal (bounded, monotone) progressions, typical of cognitive scores or normalized biomarkers. Such S-shaped trajectories naturally capture the characteristic three-phase pattern observed in many neurodegenerative diseases: an initial slow deterioration when the disease is subclinical, a rapid inflection phase corresponding to the onset of clinically detectable decline, and a final plateau as scores approach their floor or ceiling values. 
 
-\paragraph{Joint Model.} The joint model~\cite{,ortholand2025multijoint, ortholand2026joint} extends the logistic model to simultaneously analyze longitudinal measurements and time-to-event data (survival, clinical events, competing risks). Rather than treating these processes separately, which can lead to biases from informative dropout, the joint model links them through the shared latent disease age $\psi_i(t)$, avoiding the need to define an explicit disease reference time. It is on this model that the simulation and evaluation tools developed in this work are focused.
+\paragraph{Joint Model.} The joint model~\cite{ortholand2025multijoint, ortholand2026joint} extends the logistic model to simultaneously analyze longitudinal measurements and time-to-event data (survival, clinical events, competing risks). Rather than treating these processes separately, which can lead to biases from informative dropout, the joint model links them through the shared latent disease age $\psi_i(t)$, avoiding the need to define an explicit disease reference time. It is on this model that the simulation and evaluation tools developed in this work are focused.
 
 \paragraph{Mixture Model.} Standard mixed-effects models assume a single population trajectory with random individual deviations. The mixture model~\cite{kaisaridi2025mixture} relaxes this assumption by modeling the population as a combination of $n_c$ latent subgroups, each with its own distribution of individual parameters. This formulation enables simultaneous disease progression modeling and probabilistic patient subtyping.
 
@@ -537,9 +537,9 @@ $\sigma_\xi$   & 1.078  & 1.079  & $0.03\ [-0.27,\,0.37]$    & $2.32\ [2.11,\,2.
 \textbf{Parameter} & \textbf{ICC(3,1)} & \textbf{Pearson's $r$} \\ \hline
 $\xi_i$ & $0.988 \pm 0.004$ & $0.989 \pm 0.004$ \\
 $\tau_i$ & $0.995 \pm 0.002$ & $0.995 \pm 0.002$ \\
-$\text{w}_i^{(0)}$ & $0.989 \pm 0.003$ & $0.990 \pm 0.003$ \\
-$\text{w}_i^{(1)}$ & $0.990 \pm 0.003$ & $0.991 \pm 0.003$ \\
-$\text{w}_i^{(2)}$ & $0.982 \pm 0.011$ & $0.991 \pm 0.003$ \\
+$w_{i,0}$ & $0.989 \pm 0.003$ & $0.990 \pm 0.003$ \\
+$w_{i,1}$ & $0.990 \pm 0.003$ & $0.991 \pm 0.003$ \\
+$w_{i,2}$ & $0.982 \pm 0.011$ & $0.991 \pm 0.003$ \\
 $\boldsymbol{\zeta}^\top \mathbf{s}_i$ & $0.965 \pm 0.027$ & $0.978 \pm 0.013$ \\
 \hline
 \end{tabular}

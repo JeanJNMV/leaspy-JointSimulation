@@ -38,9 +38,9 @@ A `cluster` branch is also available in the repository, containing code for para
 
 ## Reference
 
-- Juliette Ortholand, Stanley Durrleman, and Sophie Tezenas du Montcel. A joint
-spatiotemporal model for multiple longitudinal markers and competing events.
-arXiv preprint arXiv:2501.08960, 2025.
+- Juliette Ortholand, Nicolas Gensollen, Stanley Durrleman, and Sophie Tezenas Du Montcel. Joint model with latent disease age: Overcoming the need for reference time. Statistical Methods in Medical Research, 35(2):225–239, 2026.
+
+- Juliette Ortholand, Stanley Durrleman, and Sophie Tezenas du Montcel. A joint spatiotemporal model for multiple longitudinal markers and competing events. arXiv preprint arXiv:2501.08960, 2025.
 
 ## Author
 - **Jean-Vincent Martini**

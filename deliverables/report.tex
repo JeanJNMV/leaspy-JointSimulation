@@ -19,7 +19,7 @@
 
 \logoentreprise{logos/logoICM.png} %Logo de l'entreprise
 
-\titre{Developing simulation and statistical evaluation tools for a non-linear mixed-effect model}
+\titre{Developing simulation and statistical evaluation tools for a nonlinear mixed-effects model}
 
 \mention{CentraleSupélec - Mention Sciences des données et de l'information \& Filière Métiers de la Recherche}
 \master{Master MVA} % Nom du master
@@ -147,7 +147,7 @@ which decomposes in log-space as
 
 Because this integral is intractable in closed form, Leaspy employs the MCMC-SAEM algorithm (Markov Chain Monte Carlo Stochastic Approximation Expectation-Maximization)~\cite{kuhn2005maximum}. This algorithm alternates between (i) a stochastic approximation step that uses Gibbs sampling to draw latent variables conditional on current parameter estimates, and (ii) a maximization step that re-estimates fixed effects and variance components from the updated sufficient statistics.
 
-Observed scores are further modelled with additive noise of standard deviation $\sigma$, a population parameter estimated jointly with the trajectory parameters.
+Observed scores are further modelled through an observation model whose dispersion is governed by $\sigma$, a population parameter estimated jointly with the trajectory parameters. Depending on the selected observation model, this may correspond to Gaussian additive noise or to the variance of a bounded distribution.
 
 \subsubsection{Riemannian Geometry of Disease Progression}
 
@@ -188,7 +188,7 @@ Leaspy provides four main algorithmic operations:
 
 \paragraph{\texttt{estimate}:} Evaluates the modeled trajectory $\gamma_{i,k}(t)$ for a specific patient at arbitrary time points, using the previously estimated individual parameters. This enables reconstruction of the full disease trajectory, imputation of missing values, and forecasting of future clinical scores.
 
-\paragraph{\texttt{simulate}:} Generates synthetic patient cohorts by (i) sampling individual parameters from the learned population distributions, (ii) generating visit times according to user-specified schedules (random, regular, or custom), and (iii) evaluating model trajectories with added observational noise. This functionality is only available for the logistic model for now, but a part of this work consists in extending it to the joint model.
+\paragraph{\texttt{simulate}:} Generates synthetic patient cohorts by (i) sampling individual parameters from the learned population distributions, (ii) generating visit times according to user-specified schedules, and (iii) evaluating model trajectories under the selected observation model. At the beginning of this internship, this functionality was restricted to the logistic model; extending it to the joint model constitutes one of the contributions described in this report.
 
 \subsection{Applications and Related Work}
 
@@ -241,7 +241,7 @@ Simulation studies occupy a central position in the development and validation o
 
 Despite their power, simulation studies are often poorly designed, inadequately analyzed and incompletely reported, which can severely limit their scientific value and reproducibility. The ADEMP (Aims, Data-generating mechanisms, Estimands, Methods, and Performance measures) framework proposed by Morris et al.~\cite{morris2019using} provides a principled template for conducting and communicating such studies. This framework guided the simulation study reported in the original joint model paper~\cite{ortholand2026joint}, and it underpins the design choices made in the simulation tools developed in the present work.
 
-Beyond methodological validation, simulated datasets present a practical advantage that is increasingly relevant in clinical research: they can be freely shared and distributed without the ethical, legal or privacy constraints that govern real patient data. A synthetic cohort generated under a calibrated model preserves the statistical properties of the original population (trajectory shapes, individual variability, censoring patterns) while containing no identifiable patient information. This makes simulated data a natural vehicle for reproducible research, open benchmarking, and collaborative method development across institutions.
+Beyond methodological validation, simulated datasets present a practical advantage that is increasingly relevant in clinical research: subject to appropriate disclosure-risk assessment, they can often be shared more easily than real patient data. A synthetic cohort generated under a calibrated model can reproduce selected statistical properties of the original population, such as trajectory shapes, individual variability, and censoring patterns, without reproducing actual patient records. This makes simulated data a useful vehicle for reproducible research, open benchmarking, and collaborative method development across institutions.
 
 \subsection{Importance in the Leaspy Context}
 
@@ -279,22 +279,22 @@ The second is methodological: to enable rigorous simulation studies of the joint
 
 The joint model~\cite{ortholand2026joint} extends the Leaspy longitudinal framework to simultaneously model repeated clinical measurements and survival outcomes, without requiring a reliable reference time point. This is a key advantage in neurodegenerative disease contexts where disease onset is not directly observable.
 
-The model is composed of three interconnected components. The longitudinal sub-model describes the evolution of a clinical score via a logistic trajectory parameterized by the latent disease age $\psi_i(t)$ (Equation~\eqref{eq:latent-age}), as already introduced in the main Leaspy framework. The survival sub-model describes the probability that patient $i$ survives beyond time $t$ using a Weibull distribution applied to the latent disease age:
+The model is composed of interconnected longitudinal and survival components. The longitudinal sub-model describes the evolution of clinical scores through logistic trajectories parameterized by the time reparametrization $e^{\xi_i}(t-\tau_i)$. The feature-specific population velocities $v_0$ are applied within the longitudinal trajectories, whereas the survival component uses the shared temporal transformation directly. The survival sub-model describes the probability that patient $i$ survives beyond time $t$ using a Weibull distribution applied to the latent disease age:
 \begin{equation}
   S_i(t) = S_0(\psi_i(t)) = \mathbf{1}_{\psi_i(t) > t_0}\, \exp\!\left(-\left(\frac{\psi_i(t) - t_0}{\nu}\right)^{\rho}\right) + \mathbf{1}_{\psi_i(t) \leq t_0},
 \end{equation}
-where $\nu > 0$ is a scale parameter and $\rho > 0$ is the shape parameter of the Weibull distribution. The model estimates the reparametrisations $\tilde{\nu} = -\log\nu$ and $\tilde{\rho} = \log\rho$, which enforce positivity while enabling unconstrained optimisation. The linkage structure connecting the two sub-models is the shared latent disease age $\psi_i(t) = e^{\xi_i}(t - \tau_i) + t_0$, which encodes individual variability in disease onset ($\tau_i$) and progression rate ($e^{\xi_i}$). This differs from classical shared-random-effects joint models, which link the survival hazard to the value of the longitudinal outcome. Here the link is structural, operating directly at the level of the disease timeline.
+where $\nu > 0$ is a scale parameter and $\rho > 0$ is the shape parameter of the Weibull distribution. The model estimates the reparametrisations $\tilde{\nu} = -\log\nu$ and $\tilde{\rho} = \log\rho$, which enforce positivity while enabling unconstrained optimisation. The linkage structure connecting the two sub-models is the shared latent disease age $\psi_i(t) = e^{\xi_i}(t - \tau_i) + t_0$, which encodes individual variability in temporal alignment ($\tau_i$) and progression rate ($e^{\xi_i}$). This differs from classical shared-random-effects joint models, which link the survival hazard to the value of the longitudinal outcome. Here the link is structural, operating directly at the level of the disease timeline.
 
 The formulation extends naturally to $L \geq 1$ competing events by assigning an independent pair of Weibull parameters $(\nu_l, \rho_l)$ to each event type $l \in \{1, \ldots, L\}$. In the single-event case the quantity of interest is the overall survival probability $S_i(t)$ and in the competing-events case, it becomes the set of cause-specific cumulative incidence functions $\mathrm{CIF}_{i,l}(t)$, each measuring the probability that event $l$ occurs by time $t$ in the presence of all other competing risks. When the longitudinal sub-model includes $K \geq 1$ latent sources $\mathbf{s}_i \in \mathbb{R}^K$, the survival sub-model is further coupled to the individual biomarker ordering pattern through a matrix of mixing weights $\boldsymbol{\zeta} \in \mathbb{R}^{K \times L}$. The survival shift $(\boldsymbol{\zeta}^\top \mathbf{s}_i)_l$ then enters an accelerated failure time reparametrization of the Weibull scale parameter for patient $i$ and event $l$:
 \begin{equation}
   \nu_{i,l} = \nu_l \exp\!\left(-\xi_i - \frac{1}{\rho_l}\,(\boldsymbol{\zeta}^\top \mathbf{s}_i)_l\right),
   \label{eq:nu-rep}
 \end{equation}
-so that the individual biomarker ordering pattern encoded in $\mathbf{s}_i$ accelerates or decelerates the event-specific hazard beyond the shared disease pace $e^{\xi_i}$. The weight matrix $\boldsymbol{\zeta}$ is estimated jointly with all other fixed effects during the MCMC-SAEM fitting procedure. \\
+so that the individual biomarker ordering pattern encoded in $\mathbf{s}_i$ accelerates or decelerates the event-specific time scale beyond the shared disease pace $e^{\xi_i}$. The weight matrix $\boldsymbol{\zeta}$ is estimated jointly with all other fixed effects during the MCMC-SAEM fitting procedure.
 
 %\noindent The joint log-likelihood decomposes additively into longitudinal and survival data attachment terms plus prior attachment terms for both fixed and random effects, under the assumption that survival and longitudinal processes are conditionally independent given the latent random effects~\cite{rizopoulos2012joint}. \\
  
-Estimation proceeds via the MCMC-SAEM algorithm, initialized from a pre-trained longitudinal model and a Weibull Accelerated Failure Time (AFT) survival model. The algorithm runs for a burn-in phase followed by a Robbins-Monro convergence phase to extract posterior means of the fixed effects. Individual random effects $(\tau_i, \xi_i)$ are personalized in a second step by maximizing the posterior likelihood given each patient's observations and censored event time, using \texttt{scipy.optimize.minimize}. \\
+Estimation proceeds via the MCMC-SAEM algorithm, initialized from a pre-trained longitudinal model and a Weibull Accelerated Failure Time (AFT) survival model. The algorithm runs for a burn-in phase followed by a Robbins-Monro stochastic-approximation phase to estimate the population parameters. Individual random effects are personalized in a second step using either numerical optimization or posterior sampling, depending on the selected personalisation algorithm.
 
 Both univariate and multivariate versions of the joint model were evaluated on simulated data according to the ADEMP framework~\cite{morris2019using}. For the univariate Joint Temporal model, $M = 100$ datasets of $N = 200$ patients were generated under the model itself, using ALS-calibrated parameters derived from the PRO-ACT dataset. In this setting, the estimation procedure recovered longitudinal fixed effects and random-effect variances with RRMSE below 11\%, whereas the survival fixed effects were estimated less precisely, with RRMSE reaching 21\% for the Weibull shape parameter. Coverage rates remained above 80\% on average, although for about half of the parameters the associated 95\% confidence intervals did not include the nominal 95\% level. At the individual level, the random effects were nonetheless well recovered, with intraclass correlations of 0.96 for the time shift~($\tau$) and 0.92 for the log speed factor~($\xi$).
 
@@ -453,7 +453,7 @@ The {Relative Root Mean Squared Error} (RRMSE) combines bias and variance into a
 \begin{equation}
   \mathrm{RRMSE}(\hat{\theta}) = \sqrt{\frac{1}{M}\sum_{m=1}^{M} \mathrm{REE}(m)^2}.
 \end{equation}
-It reduces to RB when the estimator is unbiased, and always satisfies $\mathrm{RRMSE} \geq |\mathrm{RB}|$, so any excess of RRMSE over $|\mathrm{RB}|$ is attributable to Monte Carlo variability.
+It always satisfies $\mathrm{RRMSE} \geq |\mathrm{RB}|$ and equals $|\mathrm{RB}|$ only when the REE has no variability across repetitions. The excess of RRMSE over the absolute bias therefore reflects the dispersion of the estimates across simulated cohorts.
 
 The {Empirical Relative Standard Error} (RSE) measures the variability of the estimator relative to its own mean, independently of the true value:
 \begin{equation}
@@ -487,9 +487,14 @@ Each synthetic cohort contains $N = 1000$ patients, and the experiment is repeat
 
 \subsection{Results and Interpretation}
 \subsubsection{Population parameter recovery}
-\todo{TODO + mettre plus de lignes dans les figures}
 
 Table \ref{tab:population_recovery} and Figure \ref{fig:ree_all} summarise the results of the population parameter recovery. 
+
+The parameters governing the population distribution of the temporal random effects are recovered particularly well. The relative biases of $t_0$, $\sigma_\tau$, and $\sigma_\xi$ are respectively $0.44\%$, $0.08\%$, and $0.03\%$, with RRMSE values below $2.4\%$. Their estimates are also stable across repetitions, as indicated by RSE values between $0.007$ and $0.023$. This strong recovery is consistent with the dense longitudinal design used in the experiment. The large number of repeated observations per patient provides substantial information on both the location and the rate of each individual trajectory, allowing the population mean of the time shifts and the variability of the time shifts and accelerations to be estimated precisely.
+
+Several other parameters are recovered adequately, although with larger errors. The Weibull shape parameter $\rho$ is essentially unbiased, with an RB of $0.10\%$, while the Weibull scale parameter $\nu$ is slightly overestimated, with an RB of $2.33\%$. Their RRMSE values, close to $5\%$, show that the survival component is recovered without marked systematic error but remains more variable than the temporal parameters. This lower precision is expected because each patient contributes at most one event time, whereas the longitudinal component is informed by numerous repeated measurements. Three of the four velocity components, $v_0^{(1)}$, $v_0^{(2)}$, and $v_0^{(3)}$, are also recovered satisfactorily, with relative biases between $1.12\%$ and $2.23\%$ and RRMSE values between $4.52\%$ and $5.57\%$. The observational noise parameters are systematically underestimated, but the magnitude of this bias remains moderate, ranging from $1.26\%$ to $4.60\%$. Their very low RSE values indicate that this underestimation is consistent across simulated cohorts rather than caused by unstable estimation.
+
+The least accurately recovered population parameters are the trajectory position parameters $g^{(j)}$ and, to a lesser extent, the bulbar velocity $v_0^{(0)}$. All four $g^{(j)}$ components are underestimated, with relative biases from $-5.92\%$ to $-8.80\%$ and RRMSE values reaching $12.61\%$. Similarly, $v_0^{(0)}$ is overestimated by $6.46\%$ and has an RRMSE of $10.53\%$. Position and velocity jointly determine the location and steepness of each logistic trajectory over the observed time range. They can therefore partially compensate for one another, especially when the data do not cover both asymptotic regions of the curve. This coupling makes their separate estimation more difficult than that of temporal parameters directly supported by repeated within subject observations. The poorer recovery of the bulbar components may additionally reflect the lower amount of trajectory information carried by this subscore under the reference parameterization. Nevertheless, the errors remain moderate in absolute terms and the estimates preserve the overall structure of the reference model.
 
 \begin{table}[htbp]
 \centering
@@ -531,6 +536,12 @@ $\sigma_\xi$   & 1.078  & 1.079  & $0.03\ [-0.27,\,0.37]$    & $2.32\ [2.11,\,2.
 
 \subsubsection{Individual random effect recovery}
 
+Table \ref{tab:metrics}, Figures \ref{fig:param_comparison} and \ref{fig:bland-altman} compare the true individual parameters used for simulation with the values estimated after fitting and personalisation. Overall, individual recovery is excellent. The time shift $\tau_i$ is the most accurately recovered effect, with an ICC of $0.995$, followed by the space shifts $w_{i,0}$ and $w_{i,1}$, whose ICC values are $0.989$ and $0.990$. The log acceleration $\xi_i$ is similarly well recovered, with an ICC of $0.988$. The corresponding Pearson correlations are nearly identical to the ICC values, indicating that the agreement is not merely due to preservation of subject ranking but also to close numerical correspondence between true and estimated values.
+
+The third space shift $w_{i,2}$ remains well recovered, although its ICC of $0.982$ and larger variability across repetitions indicate slightly less stable agreement. The survival shift $\boldsymbol{\zeta}^\top\mathbf{s}_i$ is the least accurately recovered individual effect, with an ICC of $0.965 \pm 0.027$. This result nevertheless represents strong agreement. Its comparatively lower precision is consistent with the limited information available for the survival process, since it is inferred from a single possibly censored event time per patient rather than from a sequence of repeated measurements.
+
+The Bland Altman analysis confirms the absence of substantial systematic error. The mean differences between estimated and true values are close to zero for all effects. The largest mean difference concerns $\tau_i$, at $0.239$ years, which is small relative to the population standard deviation $\sigma_\tau=11.63$ years. The limits of agreement are narrow for the space shifts and remain centred close to zero for both $\xi_i$ and the survival shift. Taken together, these results show that the personalisation procedure reliably recovers the individual temporal, spatial, and survival heterogeneity in the favourable dense observation setting considered here.
+
 \begin{table}[hbtp]
 \centering
 \caption{Individual random effect recovery metrics.}
@@ -558,7 +569,7 @@ $\boldsymbol{\zeta}^\top \mathbf{s}_i$ & $0.965 \pm 0.027$ & $0.978 \pm 0.013$ \
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/bland-altman_multivariate.png}
-  \caption{Bland-Altman plots for $\xi$ (left) and $\tau$ (right). The solid line indicates the bias, and the dashed lines indicate the limits of agreement.}
+  \caption{Bland Altman plots comparing estimated and true individual parameters across all repetitions. The solid line indicates the bias, and the dashed lines indicate the limits of agreement.}
   \label{fig:bland-altman}
 \end{figure}
 
@@ -572,7 +583,7 @@ A recurring concern throughout the internship was the handling of patient data f
 
 This constraint has direct consequences for research practice. Sharing fitted model parameters or reproducing a published result often requires access to the original dataset, which may not be redistributable. Collaborative method development across institutions is slowed by the administrative and legal overhead of data transfer agreements. Reviewers of a submitted paper cannot, in general, verify the reported results on the same data. These are not merely logistical inconveniences: they represent a structural tension between the scientific norm of reproducibility and the ethical imperative of data protection.
 
-The simulation tools developed during this internship offer a partial but concrete resolution to this tension. A synthetic cohort generated under a calibrated model preserves the statistical properties of the original population, including trajectory shapes, individual variability, censoring patterns, and event rates, while containing no identifiable patient information whatsoever. No simulated individual corresponds to any real patient; the entire dataset is a probabilistic artefact of the fitted model. Such synthetic datasets can therefore be freely distributed alongside published code, included in software documentation, used in teaching workshops, and shared across institutions without any risk of re-identification or breach of consent.
+The simulation tools developed during this internship offer a partial but concrete response to this tension. A synthetic cohort generated under a calibrated model can reproduce selected properties of the original population, including trajectory shapes, individual variability, censoring patterns, and event rates, without directly reproducing patient records. No simulated individual is intended to correspond to a real patient; the dataset is a probabilistic output of the fitted model. Such data may therefore be easier to distribute alongside published code, include in software documentation, and use in teaching workshops. Their release should nevertheless remain subject to appropriate governance and disclosure-risk assessment, particularly when the generating model was fitted on sensitive or small cohorts.
 
 During the internship, I came to appreciate that this property is not a secondary convenience but also an ethical contribution. The workshop organised by the laboratory on longitudinal data analysis with Leaspy relied entirely on simulated datasets, allowing participants to engage with realistic disease progression scenarios without any exposure to real patient data. More broadly, the availability of high-quality synthetic data lowers the barrier to entry for researchers who wish to develop or benchmark new methods but do not have direct access to clinical cohorts, thereby contributing to a more equitable and open research ecosystem.
 
@@ -580,7 +591,7 @@ This perspective also made me more attentive to the responsibilities that accomp
 
 \subsection{Computational Cost and Environmental Responsibility}
 
-The validation study reported in this work required fitting several separate joint models from scratch, each involving a lot of MCMC-SAEM iterations on a cohort of multiple synthetic patients, followed by a personalisation step which was also iterative per patient. The total computational budget amounted to several hours of continuous execution on institutional computing infrastructure. During the development phase, numerous additional runs were performed for debugging, hyperparameter exploration, and convergence diagnostics, multiplying the effective resource consumption well beyond the final reported experiment.
+The validation study reported in this work required fitting 200 separate joint models from scratch, each involving 70,000 MCMC-SAEM iterations on a cohort of 1,000 synthetic patients, followed by a 5,000-iteration personalisation step. The resulting computational budget amounted to several hours of continuous execution on institutional computing infrastructure. During the development phase, numerous additional runs were performed for debugging, hyperparameter exploration, and convergence diagnostics, multiplying the effective resource consumption well beyond the final reported experiment.
 
 This experience confronted me with the environmental cost of simulation-intensive research. Each model fit consumes electrical energy, generates heat, and contributes to the carbon footprint of the research activity. While the individual energy consumption of a single MCMC-SAEM run is modest compared to, for instance, large-scale deep learning training, the cumulative effect of hundreds of exploratory and validation runs over a six-month internship is not negligible.
 
@@ -608,7 +619,7 @@ This internship addressed a central methodological and software challenge for th
 
 The main contribution of this work was the development and integration of a simulation pipeline for the joint model within the Leaspy codebase. This required extending the existing logic of the library to support the generation of event times alongside longitudinal trajectories, handling censoring constraints, adapting the \texttt{estimate} method to return survival-related quantities, and generalizing the framework to competing events. These developments made it possible to simulate synthetic cohorts in a way that is coherent with the mathematical structure of the joint model and with the design principles of the Leaspy API.
 
-A second important contribution was the implementation of a simulation-based validation strategy aimed at evaluating the self-consistency of the full pipeline. By repeatedly simulating datasets from a reference fitted model and re-estimating the parameters, the study assessed the recovery of both population parameters and personalized individual random effects. The results show that the main longitudinal parameters and the subject-level time-shift and acceleration effects are recovered with good accuracy in the considered setting. At the same time, some parameters related to survival and latent-source couplings exhibit substantially larger estimation errors, highlighting the practical difficulties of identifying second-order effects in moderately sized cohorts. These findings are informative not only for the specific implementation developed during the internship, but also more generally for the statistical use of the joint model.
+A second important contribution was the implementation of a simulation-based validation strategy aimed at evaluating the self-consistency of the full pipeline. By repeatedly simulating datasets from a reference fitted model and re-estimating the parameters, the study assessed the recovery of both population parameters and personalized individual random effects. The results show that the temporal population parameters and the subject-level time-shift, acceleration, and spatial effects are recovered with good accuracy in the considered setting. The trajectory position parameters and the bulbar velocity are less accurately recovered, while the individual survival shift remains strongly, though comparatively less precisely, identified. These findings highlight the unequal identifiability of model components even under a favourable dense observation design.
 
 Beyond the work described in detail in this report, the internship also involved a broader contribution to the life of the project: reviewing pull requests, strengthening the test suite with unit and functional tests, improving parts of the documentation, and preparing and leading a workshop on longitudinal data, with a particular focus on simulation. These activities were essential to ensure that the developed features are not only methodologically relevant, but also maintainable, documented and usable by other contributors and end users.
 

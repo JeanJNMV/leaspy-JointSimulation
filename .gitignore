@@ -1,6 +1,7 @@
 # System and IDE files
 .vscode/
 .DS_Store
+.venv/
 
 # Data and results
 _outputs/

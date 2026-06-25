@@ -478,7 +478,7 @@ The {Bland-Altman analysis} provides a graphical complement to the ICC. For each
  
 \subsection{Experimental Setup}
 
-The reference model $\theta^*$ is a multivariate joint model fitted on the PRO-ACT dataset, a pooled and anonymized repository of longitudinal data from completed clinical trials in amyotrophic lateral sclerosis (ALS). It is fitted with latent sources of dimension $K = 2$, a single event ($L = 1$) representing death and four longitudinal outcomes ($J=4$) corresponding to the ALSFRS-R sub-scores for bulbar, fine motor, gross motor, and total function. The four longitudinal features are indexed as ($j=0,1,2,3$) and correspond, respectively, to: bulbar function (the sum of speech, salivation, and swallowing items); fine-motor function (handwriting, cutting food/handling utensils, and dressing/hygiene); gross-motor function (turning in bed/adjusting bed clothes, walking, and climbing stairs); and total function, defined as the overall ALSFRS-R score across all items, including the three preceding domains and the respiratory items (dyspnea, orthopnea, and respiratory insufficiency). Accordingly, the product $\mathbf{A}\mathbf{s}_i$ contains four feature-level spatial shifts, while the survival component contains one survival shift.
+The reference model $\theta^*$ is a multivariate joint model fitted on the PRO-ACT dataset, a pooled and anonymized repository of longitudinal data from completed clinical trials in amyotrophic lateral sclerosis (ALS). It is fitted with latent sources of dimension $K = 2$, a single event ($L = 1$) representing death and four longitudinal outcomes ($J=4$) corresponding to the ALSFRS-R sub-scores for bulbar, fine motor, gross motor, and total function. The four longitudinal features are indexed as ($j=0,1,2,3$) and correspond, respectively, to: bulbar function (the sum of speech, salivation, and swallowing items); fine-motor function (handwriting, cutting food/handling utensils, and dressing/hygiene); gross-motor function (turning in bed/adjusting bed clothes, walking, and climbing stairs); and total function, defined as the overall ALSFRS-R score across all items, including the three preceding domains and the respiratory items (dyspnea, orthopnea, and respiratory insufficiency). Accordingly, the product $\mathbf{A}\mathbf{s}_i$ contains $J=4$ feature-level spatial shifts, while the survival component contains $L=1$ survival shift.
 
 The simulation study is carried out in the \textit{random} visit mode with the following study parameters: first-visit offset $\bar{\delta}_f = -2.0$ years and $\sigma_{\delta_f} = 1.0$ year; follow-up duration $\overline{T_f} = 6.0$ years and $\sigma_{T_f} = 2.0$ years; inter-visit interval $\bar{\delta}_v = 0.083$ years and $\sigma_{\delta_v} = 0.042$ years; and a minimum spacing between visits of $0.05$ years. These parameters are deliberately chosen to place each simulated cohort in favourable conditions: the short inter-visit interval and long follow-up produce a dense observation schedule, so that each patient contributes many data points. This abundance of information per individual reduces the number of MCMC-SAEM iterations required to reach convergence both at the fitting and at the personalisation stage.  
 
@@ -536,9 +536,9 @@ $\sigma_\xi$   & 1.078  & 1.079  & $0.03\ [-0.27,\,0.37]$    & $2.32\ [2.11,\,2.
 
 \subsubsection{Individual random effect recovery}
 
-Table \ref{tab:metrics}, Figures \ref{fig:param_comparison} and \ref{fig:bland-altman} compare the true individual effects used for simulation with the values estimated after fitting and personalisation. Overall, individual recovery is excellent. The time shift $\tau_i$ is the most accurately recovered effect, with an ICC of $0.995$. The log acceleration $\xi_i$ has an ICC of $0.988$, while the four feature-level spatial shifts obtained from $\mathbf{w}_i=\mathbf{A}\mathbf{s}_i$ have ICC values between $0.987$ and $0.990$. Their Pearson correlations range from $0.988$ to $0.992$. These results show that the feature-specific trajectory displacements are accurately recovered after accounting for the rotational non-identifiability of the latent source coordinates.
+Table \ref{tab:metrics}, Figures \ref{fig:param_comparison} and \ref{fig:bland-altman} compare the true individual effects used for simulation with the values estimated after fitting and personalisation. 
 
-In the scatter plots, one may nevertheless notice a visible concentration of points around estimated values close to zero for some random effects. This pattern could reflect the posterior shrinkage induced by the personalisation step. In finite samples, estimated individual effects are pulled slightly toward the population mean, which is zero for the centred latent effects. The phenomenon is much less apparent when comparing two personalised quantities, such as the reference and re-estimated random effects, because both undergo the same regularisation. Importantly, this visual effect should not be over-interpreted: despite this mild shrinkage, the agreement metrics remain very good, with ICC values above $0.96$ for all individual effects.
+Overall, individual recovery is excellent. The time shift $\tau_i$ is the most accurately recovered effect, with an ICC of $0.995$. The log acceleration $\xi_i$ has an ICC of $0.988$, while the four feature-level spatial shifts obtained from $\mathbf{w}_i=\mathbf{A}\mathbf{s}_i$ have ICC values between $0.987$ and $0.990$. Their Pearson correlations range from $0.988$ to $0.992$. These results show that the feature-specific trajectory displacements are accurately recovered after accounting for the rotational non-identifiability of the latent source coordinates.
 
 The recovery accuracy is homogeneous across the four longitudinal outcomes. The ICC values are $0.987$, $0.989$, $0.990$, and $0.987$ for $w_{i,0}$ to $w_{i,3}$, respectively, with small between-repetition standard deviations. The survival shift $(\boldsymbol{\zeta}^{\top}\mathbf{s}_i)_0$ is the least accurately recovered individual effect, with an ICC of $0.965 \pm 0.027$. This still represents strong agreement. Its comparatively lower precision is consistent with the limited information available for the survival process, since it is inferred from a single possibly censored event time per patient rather than from a sequence of repeated measurements.
 
@@ -560,9 +560,11 @@ $(\boldsymbol{\zeta}^\top \mathbf{s}_i)_0$ & $0.965 \pm 0.027$ & $0.978 \pm 0.01
 \label{tab:metrics}
 \end{table}
 
+In the scatter plots, one may nevertheless notice a visible concentration of points around estimated values close to zero for some random effects. This pattern could reflect the posterior shrinkage induced by the personalisation step. In finite samples, estimated individual effects are pulled slightly toward the population mean, which is zero for the centred latent effects. The phenomenon does not appear when comparing two personalised quantities, such as the reference model and the $m$ fitted model, because both undergo the same regularisation. Importantly, this visual effect should not be over-interpreted: despite this mild shrinkage, the agreement metrics remain very good, with ICC values above $0.96$ for all individual effects.
+
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.9\textwidth]{figures/Indiv_multivariate.png}
+  \includegraphics[width=\textwidth]{figures/Indiv_multivariate.png}
   \caption{Scatter plots of estimated versus true individual effects across all repetitions. The spatial effects are the four feature-level components of $\mathbf{w}_i=\mathbf{A}\mathbf{s}_i$. The dashed line indicates the identity line of perfect agreement.}
   \label{fig:param_comparison}
 \end{figure}
@@ -571,7 +573,7 @@ The Bland Altman analysis confirms the absence of substantial systematic error. 
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.9\textwidth]{figures/bland-altman_multivariate.png}
+  \includegraphics[width=\textwidth]{figures/bland-altman_multivariate.png}
   \caption{Bland Altman plots comparing estimated and true individual effects across all repetitions, including the four feature-level spatial shifts $\mathbf{A}\mathbf{s}_i$. The solid line indicates the bias, and the dashed lines indicate the limits of agreement.}
   \label{fig:bland-altman}
 \end{figure}

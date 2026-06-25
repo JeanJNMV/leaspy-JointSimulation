@@ -401,17 +401,17 @@ The diagnostic force of this design lies precisely in its circularity. The simul
     \node[box, fill=green!10,   right=2.8cm of sim] (fit)
           {Fitted model\\$\hat{\theta}^{(m)}$};
     \node[box, fill=red!8,      below=1.8cm of fit] (per)
-          {Individual parameters\\$(\hat{\tau}_i^{(m)},\,\hat{\xi}_i^{(m)})$};
+          {Individual parameters\\$(\hat{\tau}_i^{(m)},\,\hat{\xi}_i^{(m)}, \dots)$};
 
     % True individual parameters node
     \node[box, fill=blue!8,    below=1.8cm of sim] (trueip)
-          {True individual parameters\\$(\tau_i^{(m)},\,\xi_i^{(m)})$};
+          {True individual parameters\\$(\tau_i^{(m)},\,\xi_i^{(m)}, \dots)$};
 
     % Flow arrows 
     \draw[arr] (ref)  -- node[above, font=\footnotesize]{simulate} (sim);
     \draw[{Stealth[length=6pt]}-{Stealth[length=6pt]}, thick] (sim) -- node[above, font=\footnotesize]{fit} (fit);
     \draw[arr] (fit)  -- node[right, font=\footnotesize]{personalise} (per);
-    \draw[arr] (sim.south) -- node[left, font=\footnotesize]{get $(\tau_i, \xi_i)$} (trueip);
+    \draw[arr] (sim.south) -- node[left, font=\footnotesize]{get $(\tau_i, \xi_i, \dots)$} (trueip); 
 
     % Comparison arrows
     \draw[darr] (ref.north east) to[out=30, in=150] node[above, font=\footnotesize, color=black] 

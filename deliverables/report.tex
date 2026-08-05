@@ -148,7 +148,7 @@ A key innovation of Leaspy is the interpretation of disease progression within a
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.7\textwidth]{figures/riemannian_pov.png}
+  \includegraphics[width=\textwidth]{figures/riemannian_pov.png}
   \caption{Shift from clinical to riemannian perspective. On the left, the progression of clinical outcomes for one patient is represented depending on the age of the patient. This represents how a clinician is used to see the progression of the patient. On the right, the same patient progression is represented but this time in a disease space (manifold) built thanks to the knowledge extracted from the four clinical outcomes. This represents the Riemannian point of view of the progression of the patient.}
   \label{fig:riemannian-pov}
 \end{figure}
@@ -219,12 +219,16 @@ where $t_0$ is the population estimated reference time, $v_{0,k}$ is the speed o
 
 To sum up, the model can be resumed by the following equations for an individual $i$ and an outcome $k$:
 
-\begin{align}
+\begin{equation}
+\left\{
+\begin{aligned}
   & \psi_i(t) = e^{\xi_i}(t - \tau_i) + t_0, \\
   & w_{i} = \mathbf{A}\mathbf{s}_i, \\
   & \gamma_{i,k}(t) = \left(1 + g_k \times \exp \left(-\frac{(1+g_k)^2}{g_k} (v_{0,k} (\psi_i(t) - t_0) + w_{i,k})\right)\right)^{-1}, \\
   & y_{i,j,k} = \gamma_{i,k}(t_{i,j,k}) + \epsilon_{i,j,k}, \quad \epsilon_{i,j,k} \sim \mathcal{N}(0, \sigma_k^2).
-\end{align}
+\end{aligned}
+\right.
+\end{equation}
 
 To perform the optimization procedure, we first compute the likelihood of the model given the observations. For simplification, let $y$ denote the observed data, $z = (z_{\mathrm{fe}}, z_{\mathrm{re}})$ the latent fixed and random effects, $\theta$ the model parameters, and $\Pi$ the known hyperparameters. Parameter estimation is performed by maximizing the following marginal likelihood:
 \begin{equation}
@@ -479,11 +483,11 @@ If the simulation algorithm correctly implements the joint model structure, and 
     \node[box, fill=green!10,   right=2.8cm of sim] (fit)
           {Fitted model\\ Population parameters $\hat{\theta}^{(m)}$};
     \node[box, fill=red!8,      below=1.8cm of fit] (per)
-          {Individual parameters\\$(\hat{\tau}_i^{(m)},\,\hat{\xi}_i^{(m)}, \dots)$};
+          {Estimated individual \\ parameters $(\hat{\tau}_i^{(m)},\,\hat{\xi}_i^{(m)}, \dots)$};
 
     % True individual parameters node
     \node[box, fill=blue!8,    below=1.8cm of sim] (trueip)
-          {True individual parameters\\$(\tau_i^{(m)},\,\xi_i^{(m)}, \dots)$};
+          {True sampled individual \\ parameters $(\tau_i^{(m)},\,\xi_i^{(m)}, \dots)$};
 
     % Flow arrows 
     \draw[arr] (ref)  -- node[above, font=\footnotesize]{simulate} (sim);

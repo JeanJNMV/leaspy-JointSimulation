@@ -1,0 +1,909 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\usecolortheme{default}
+\useoutertheme{split}
+\setbeamertemplate{headline}{}
+\useinnertheme{circles}
+\usepackage{xcolor}
+\usepackage{mathrsfs}
+\usepackage{bbm}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{animate}
+\usepackage[ruled,vlined,noend]{algorithm2e} 
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{comment}
+\usepackage{booktabs}
+\usepackage{array} 
+\usepackage{appendixnumberbeamer}
+\usepackage{tikz} 
+\usetikzlibrary{arrows.meta,positioning,calc,decorations.pathreplacing}
+\captionsetup[figure]{font=tiny}
+
+% --- Template Definitions ---
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+% Colors
+\definecolor{CSred}{RGB}{160,32,60}
+\definecolor{CSgrey}{RGB}{136,121,150}
+\definecolor{UPSred}{RGB}{97,21,58}
+
+% Theme adjustments
+\setbeamercolor{titlelike}{bg=CSred}
+\setbeamerfont{title}{series=\bfseries}
+\setbeamercolor{palette primary}{bg=CSred,fg=white}
+\setbeamercolor{palette secondary}{bg=CSred,fg=white}
+\setbeamercolor{palette tertiary}{bg=CSgrey,fg=white}
+\setbeamercolor{palette quaternary}{bg=CSgrey,fg=white}
+\setbeamercolor{structure}{fg=CSgrey}
+\setbeamercolor{alerted text}{fg=CSred}
+\setbeamertemplate{navigation symbols}{}
+
+\usepackage[
+backend=biber,
+style=numeric,
+sorting=none
+]{biblatex}
+\addbibresource{bibliography.bib}
+\renewcommand*{\bibfont}{\footnotesize}
+
+% --- Presentation helpers ---
+\newcommand{\CSonly}{\colorbox{CSred}{\textcolor{white}{\scriptsize\bfseries CS ONLY}}}
+\newcommand{\takeaway}[1]{%
+  \begin{beamercolorbox}[rounded=true,sep=0.7ex,wd=\linewidth]{palette primary}
+    \centering\bfseries #1
+  \end{beamercolorbox}}
+\newcommand{\softbox}[2]{%
+  \begin{beamercolorbox}[rounded=true,sep=0.8ex,wd=\linewidth]{#1}#2\end{beamercolorbox}}
+\newcommand{\slidesource}[1]{%
+  \par\vspace{0.2ex}{\raggedleft\scriptsize\color{gray}#1\par}}
+\setbeamercolor{softgrey}{bg=CSgrey!12,fg=black}
+\setbeamercolor{softred}{bg=CSred!10,fg=black}
+\setbeamercolor{softgreen}{bg=green!10,fg=black} 
+
+% --- Metadata ---
+\title[Joint simulation in Leaspy]{Developing simulation and statistical evaluation tools for a nonlinear mixed-effects model}  
+\subtitle{Extending and validating the joint model in Leaspy}
+\author[Jean-Vincent Martini]{Jean-Vincent Martini}
+\institute[ICM -- INRIA ARAMIS]{Paris Brain Institute (ICM) -- INRIA ARAMIS\\[0.25em]
+  End-of-studies internship, April--September 2026}
+\date{September 2026}
+\titlegraphic{
+  \includegraphics[height=1.5cm]{logos/logoICM.png}\hspace{1.1cm}
+  \includegraphics[height=1.5cm]{logos/logoCS.png}\hspace{1.1cm}
+  \includegraphics[height=1.5cm]{logos/logoMVA.jpg}
+}
+
+\begin{document}
+
+\frame{\titlepage}
+
+% ============================================================================
+\section{Longitudinal disease modelling}
+
+\begin{frame}{Longitudinal data: repeated observations over time}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.40\textwidth}
+      \begin{itemize}
+        \item The \alert{same patient} is observed at several ages.
+        \item Visits can be sparse, irregular, unbalanced, and partially missing.
+        \item Repeated measurements from one patient are correlated.
+      \end{itemize}
+
+      \vspace{0.7em}
+      
+    \end{column}
+    \begin{column}{0.57\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{figures/obs_example.png}
+
+      \scriptsize Dots: observations at successive visits.\quad
+      Curves: personalised trajectories.
+    \end{column}
+  \end{columns}
+
+  \vfill
+  \softbox{softgrey}{
+        \textbf{Nonlinear mixed-effects models} combine a population trajectory
+        with patient-specific deviations.
+      }
+  \takeaway{Reconstruct disease dynamics from short, heterogeneous follow-ups.}
+\end{frame}
+
+\begin{frame}{From separate scores to a disease-space trajectory}
+  \begin{columns}[c,onlytextwidth]
+    \begin{column}{0.62\textwidth}
+      \centering
+      \includegraphics[width=0.96\linewidth]{figures/riemannian_pov.png}
+    \end{column}
+    \begin{column}{0.35\textwidth}
+      \begin{itemize}
+        \item \textbf{Clinical view:} one curve per outcome against age.
+        \item \textbf{Riemannian view:} their joint evolution is one path $\gamma_i$ in disease space.
+        \item The metric encodes the allowed trajectory shape.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+  \vspace{0.3em}
+  \takeaway{A suitable metric on $(0,1)^J$ produces bounded logistic trajectories.}
+  \slidesource{Riemannian disease course mapping: \textcite{schiratti2017bayesian}.}
+\end{frame}
+
+\begin{frame}{Notation used throughout the talk}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.45\textwidth}
+      {\small
+      \begin{tabular}{>{$}l<{$} @{\enspace} l}
+        i=1,\ldots,N & patient\\[0.35em]
+        r=1,\ldots,n_i & visit\\[0.35em]
+        j=1,\ldots,J & longitudinal feature\\[0.35em]
+        k=1,\ldots,K & latent source\\[0.35em]
+        %l=1,\ldots,L & event type
+      \end{tabular}}
+
+      \vspace{1em}
+      \begin{itemize}
+        \item $t_{i,r,j}$: chronological age
+        \item $y_{i,r,j}$: observed score
+        \item patient-specific quantities carry an index $i$
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.52\textwidth}
+      \softbox{softred}{
+        \centering
+        \large
+        $y_{i,r,j}=\gamma_{i,j}(t_{i,r,j})+\epsilon_{i,r,j}$
+      }
+
+      \vspace{1em}
+      \begin{itemize}
+        \item $\gamma_{i,j}$ is the latent individual trajectory.
+        \item $\epsilon_{i,r,j}$ represents observation noise.
+        \item Bounded clinical scores are normalised to $(0,1)$ for logistic modelling.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Nonlinear mixed effects: population and individual}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\textwidth}
+      \softbox{softgrey}{
+        \centering\textbf{Fixed effects: shared by the cohort}
+      }
+      \begin{itemize}
+        \item reference time $t_0$
+        \item trajectory positions $\mathbf g$
+        \item trajectory velocities $\mathbf v_0$
+        \item mixing matrix $\mathbf A$
+        \item survival parameters in the joint model
+      \end{itemize}
+
+      \centering
+      \small population-average trajectory $\gamma_0$
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \softbox{softred}{
+        \centering\textbf{Random effects: one set per patient}
+      }
+      \begin{itemize}
+        \item time shift $\tau_i$
+        \item log-acceleration $\xi_i$
+        \item latent sources $\mathbf s_i$
+        \item feature shifts $\mathbf w_i=\mathbf A\mathbf s_i$
+      \end{itemize}
+
+      \centering
+      \small individual trajectory $\gamma_i$
+    \end{column}
+  \end{columns}
+
+  \vfill
+  \takeaway{Fixed effects describe a typical disease course; random effects explain heterogeneity.}
+\end{frame}
+
+\begin{frame}{Disease age aligns heterogeneous patients}
+  \centering
+  \vspace{0.2em}
+  {\LARGE
+    \[
+      \boxed{\psi_i(t)=e^{\xi_i}(t-\tau_i)+t_0}
+    \]
+  }
+
+  \vspace{0.6em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.31\textwidth}
+      \softbox{softgrey}{
+        \centering
+        $\tau_i$\\[0.25em]
+        \small shifts the trajectory earlier or later
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softred}{
+        \centering
+        $e^{\xi_i}$\\[0.25em]
+        \small accelerates or slows disease progression
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softgreen}{
+        \centering
+        $t_0$\\[0.25em]
+        \small anchors the population disease timeline
+      }
+    \end{column}
+  \end{columns}
+
+  \vspace{1em}
+  \begin{itemize}
+    \item At chronological age $t=\tau_i$, patient $i$ is at disease age $t_0$.
+    \item Patients of the same chronological age can therefore occupy different disease stages.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{How random effects personalise the trajectory}
+  \centering
+  \includegraphics[width=\textwidth]{figures/random_effects.png}
+
+  \vspace{0.2em}
+  \takeaway{Time shift, acceleration, and space shifts transform one population curve into an individual course.}
+  \slidesource{Figure adapted from the disease course mapping presentation in \textcite{koval2021ad}.}
+\end{frame}
+
+\begin{frame}{The joint model: one disease age, two processes}
+  \centering
+  \resizebox{0.96\linewidth}{!}{%
+  \begin{tikzpicture}[
+      node distance=1.15cm and 1.5cm,
+      box/.style={draw,rounded corners=4pt,minimum width=3.4cm,minimum height=1.15cm,align=center},
+      arr/.style={-{Stealth[length=6pt]},thick}
+    ]
+    \node[box,fill=CSgrey!12] (patient) {Chronological age $t$\\Random effects $(\tau_i,\xi_i,\mathbf s_i)$};
+    \node[box,fill=CSred!10,right=of patient] (psi) {Shared latent disease age\\$\psi_i(t)=e^{\xi_i}(t-\tau_i)+t_0$};
+    \node[box,fill=blue!8,above right=0.65cm and 1.6cm of psi] (long) {Longitudinal process\\scores $\gamma_{i,j}(t)$};
+    \node[box,fill=green!10,below right=0.65cm and 1.6cm of psi] (surv) {Time-to-event process\\survival $S_i(t)$};
+    \draw[arr] (patient) -- (psi);
+    \draw[arr] (psi) -- (long);
+    \draw[arr] (psi) -- (surv);
+  \end{tikzpicture}}
+
+  \vspace{0.7em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\textwidth}
+      \begin{itemize}
+        \item Weibull survival is applied to disease age:
+          $S_i(t)=S_0\!\left(\psi_i(t)\right)$.
+        \item Latent sources can also shift the event-specific time scale.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{itemize}
+        \item Supports one event or $L$ competing events.
+        \item Models informative dropout instead of treating it as independent missingness.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \slidesource{Joint latent-disease-age models: \textcite{ortholand2025multijoint,ortholand2026joint}.}
+\end{frame}
+
+% ============================================================================
+\section{Simulating joint-model cohorts}
+
+\begin{frame}{Why simulation is indispensable here}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.31\textwidth}
+      \softbox{softgrey}{
+        \centering\textbf{Known truth}\\[0.4em]
+        \small Real cohorts never reveal the true disease age or individual random effects.
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softred}{
+        \centering\textbf{Controlled tests}\\[0.4em]
+        \small Measure recovery and probe sparse visits, censoring, and informative dropout.
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softgreen}{
+        \centering\textbf{Shareable cohorts}\\[0.4em]
+        \small Support reproducibility and benchmarking without distributing patient records.
+      }
+    \end{column}
+  \end{columns}
+
+  \vspace{1em}
+  \softbox{softred}{
+    \textbf{Internship gap.} The joint-model paper used a separate research script;
+    Leaspy's standard \texttt{simulate} interface supported only the logistic model.
+  }
+
+  \vspace{0.8em}
+  \takeaway{Goal: integrate joint simulation in Leaspy, then test the complete simulate--fit--personalise loop.}
+  \slidesource{Simulation-study principles: \textcite{morris2019using}.}
+\end{frame}
+
+\begin{frame}{Two input layers must remain distinct}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\textwidth}
+      \softbox{softgrey}{
+        \centering\textbf{Learned by \texttt{fit}}
+      }
+      \begin{itemize}
+        \item longitudinal shape: $t_0,\mathbf g,\mathbf v_0$
+        \item heterogeneity: $\sigma_\tau,\sigma_\xi$
+        \item observation noise
+        \item survival: $\boldsymbol\nu,\boldsymbol\rho$
+        \item source mixing: $\mathbf A,\boldsymbol\zeta$
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \softbox{softred}{
+        \centering\textbf{Specified by the user}
+      }
+      \begin{itemize}
+        \item cohort size $N$
+        \item first-visit offset: $\bar\delta_f,\sigma_{\delta_f}$
+        \item follow-up: $\overline T_f,\sigma_{T_f}$
+        \item inter-visit gap: $\bar\delta_v,\sigma_{\delta_v}$
+        \item minimum visit spacing
+        \item or an explicit DataFrame visit schedule
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+  \vfill
+  \takeaway{The model determines what disease progression looks like; the user determines what the study looks like.}
+\end{frame}
+
+\begin{frame}{Simulation algorithm (1/2): create each follow-up}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.31\textwidth}
+      \softbox{softgrey}{
+        \centering\textbf{1. Random effects}\\[0.5em]
+        $\xi_i\sim\mathcal N(0,\sigma_\xi^2)$\\
+        $\tau_i\sim\mathcal N(t_0,\sigma_\tau^2)$\\[0.35em]
+        \scriptsize and latent sources when present
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softred}{
+        \centering\textbf{2. First visit}\\[0.5em]
+        $t_{i,0}=\tau_i+\delta_{f_i}$\\
+        $\delta_{f_i}\sim\mathcal N(\bar\delta_f,\sigma_{\delta_f}^2)$
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softgreen}{
+        \centering\textbf{3. Visit schedule}\\[0.5em]
+        draw inter-visit gaps $\delta_{v_{i,r}}$\\
+        until the follow-up duration $T_{f_i}$
+      }
+    \end{column}
+  \end{columns}
+
+  \vspace{1.2em}
+  \centering
+  \begin{tikzpicture}[x=1.15cm,y=1cm]
+    \draw[-{Stealth[length=6pt]},thick] (0,0)--(8.4,0) node[right]{age};
+    \foreach \x/\lab in {0.8/$t_{i,0}$,2.0/$t_{i,1}$,3.6/$t_{i,2}$,5.1/$t_{i,3}$,7.5/$t_{i,n_i}$}{
+      \draw[thick] (\x,-0.12)--(\x,0.12) node[above=4pt]{\lab}; 
+    }
+    \draw[decorate,decoration={brace,mirror,amplitude=5pt}] (0.8,-0.25)--(7.5,-0.25)
+      node[midway,below=7pt]{$T_{f_i}$};
+  \end{tikzpicture}
+
+  \vfill
+  \takeaway{Steps 2--3 are governed by the user-defined study design.}
+\end{frame}
+
+\begin{frame}{Simulation algorithm (2/2): outcomes and events}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.31\textwidth}
+      \softbox{softgrey}{
+        \centering\textbf{4. Outcomes}\\[0.45em]
+        compute $\psi_i(t_{i,r})$ and $\gamma_i$\\
+        then draw bounded observations with Beta noise
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softred}{
+        \centering\textbf{5. Event time}\\[0.45em]
+        inverse-transform sampling from survival\\[0.25em]
+        $T_{e_i}\sim e^{-\xi_i}\mathcal W(\nu,\rho)+\tau_i$
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softgreen}{
+        \centering\textbf{6. Censoring}\\[0.45em]
+        remove visits after $T_{e_i}$\\
+        right-censor events beyond the final visit
+      }
+    \end{column}
+  \end{columns}
+
+  \vspace{1.2em}
+  \centering
+  \begin{tikzpicture}[x=1.15cm,y=1cm]
+    \draw[-{Stealth[length=6pt]},thick] (0,0)--(8.4,0) node[right]{age};
+    \foreach \x in {0.8,2.0,3.6,5.1}{\fill[CSgrey] (\x,0) circle (2.2pt);}
+    \draw[CSred,very thick] (5.9,-0.35)--(5.9,0.35) node[above=3pt]{event $T_{e_i}$};
+    \foreach \x in {6.7,7.7}{
+      \draw[gray] (\x-0.09,-0.09)--(\x+0.09,0.09);
+      \draw[gray] (\x-0.09,0.09)--(\x+0.09,-0.09);
+    }
+    \node[gray,below=6pt] at (7.2,0){removed visits};
+  \end{tikzpicture}
+
+  \vfill
+  \takeaway{Output: longitudinal observations, an event or censoring time, and its indicator.}
+\end{frame}
+
+\begin{frame}{Adaptation inside Leaspy}
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[
+      node distance=0.7cm,
+      box/.style={draw,rounded corners=3pt,minimum width=2.35cm,minimum height=1.0cm,align=center,font=\small},
+      arr/.style={-{Stealth[length=5pt]},thick}
+    ]
+    \node[box,fill=CSgrey!12] (visits) {random schedule\\or DataFrame};
+    \node[box,fill=blue!8,right=of visits] (estimate) {extended\\\texttt{estimate}};
+    \node[box,fill=orange!12,right=of estimate] (cond) {trajectories +\\conditional $S$/CIF};
+    \node[box,fill=CSred!10,right=of cond] (sample) {inverse sampling\\on visit grid};
+    \node[box,fill=green!10,right=of sample] (output) {rounding, censoring\\and output};
+    \draw[arr] (visits)--(estimate);
+    \draw[arr] (estimate)--(cond);
+    \draw[arr] (cond)--(sample);
+    \draw[arr] (sample)--(output);
+  \end{tikzpicture}}
+
+  \vspace{0.9em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\textwidth}
+      \begin{itemize}
+        \item Missing random-mode study parameters can be estimated from an input dataset.
+        \item Single-event survival and cause-specific CIFs use one shared interface.
+        \item Competing event type is sampled from incremental cause-specific CIFs.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{itemize}
+        \item Events lie on the planned visit grid and cannot precede the first visit.
+        \item Beta variance is clamped near score boundaries when necessary.
+        \item A final pass removes visits moved beyond the event by rounding.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+  \vfill
+  \takeaway{The implementation reuses model predictions, supports competing risks, and preserves API consistency.}
+\end{frame}
+
+% ============================================================================
+\section{Simulation-based validation}
+
+\begin{frame}{How simulation quality is assessed}
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[
+      node distance=1.25cm and 1.65cm,
+      box/.style={rectangle,draw,rounded corners=4pt,minimum width=3.0cm,minimum height=1.05cm,align=center,font=\small},
+      arr/.style={-{Stealth[length=6pt]},thick},
+      darr/.style={{Stealth[length=5pt]}-{Stealth[length=5pt]},dashed,thick,color=gray!75}
+    ]
+    \node[box,fill=blue!8] (ref) {Reference model\\population truth $\theta^*$};
+    \node[box,fill=orange!12,right=2.5cm of ref] (sim) {Synthetic cohort $m$\\$y$, event time, indicator};
+    \node[box,fill=green!10,right=2.3cm of sim] (fit) {Fresh fitted model\\$\hat\theta^{(m)}$};
+    \node[box,fill=blue!8,below=1.55cm of sim] (true) {True sampled effects\\$\tau_i,\xi_i,\ldots$};
+    \node[box,fill=CSred!10,below=1.55cm of fit] (perso) {Personalised effects\\$\hat\tau_i,\hat\xi_i,\ldots$};
+    \draw[arr] (ref)--node[above,font=\footnotesize]{simulate}(sim);
+    \draw[arr] (sim)--node[above,font=\footnotesize]{fit}(fit);
+    \draw[arr] (fit)--node[right,font=\footnotesize]{personalise}(perso);
+    \draw[arr] (sim)--node[left,font=\footnotesize]{retain truth}(true);
+    \draw[darr] (ref.north east) to[out=30,in=150]
+      node[above,font=\footnotesize,color=black]{RB, RRMSE}(fit.north west);
+    \draw[darr] (true)--node[below,font=\footnotesize,color=black]{ICC, Pearson's $r$}(perso);
+    \draw[decorate,decoration={brace,amplitude=6pt,raise=5pt}]
+      (sim.north west)--(fit.north east)
+      node[midway,above=13pt,font=\footnotesize\itshape]{repeat $M$ times};
+  \end{tikzpicture}}
+
+  \vspace{0.5em}
+  \takeaway{Self-consistency asks whether the model can recover what it generated.}
+\end{frame}
+
+\begin{frame}{What is simulated exactly?}
+  \softbox{softgrey}{
+    \centering
+    Reference: multivariate joint model fitted on the PRO-ACT ALS dataset\\
+    $J=4$ longitudinal features, $K=2$ latent sources, $L=1$ event (death)
+  }
+
+  \vspace{0.6em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Bulbar function}
+        Speech, salivation, and swallowing items.
+      \end{block}
+      \begin{block}{Fine-motor function}
+        Handwriting; cutting food/handling utensils; dressing and hygiene.
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Gross-motor function}
+        Turning in bed; walking; climbing stairs.
+      \end{block}
+      \begin{block}{Total function}
+        Overall ALSFRS-R: all items, including the preceding domains and respiratory items.
+      \end{block}
+    \end{column}
+  \end{columns}
+
+  \vfill
+  \scriptsize Respiratory items: dyspnea, orthopnea, and respiratory insufficiency.
+\end{frame}
+
+\begin{frame}{Experimental setting: deliberately information-rich}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.31\textwidth}
+      \softbox{softgrey}{
+        \centering\textbf{Replications}\\[0.5em]
+        $N=1000$ patients\\
+        $M=200$ cohorts
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softred}{
+        \centering\textbf{Visit process}\\[0.5em]
+        first offset $-2\pm1$ y\\
+        follow-up $6\pm2$ y\\
+        interval $0.083\pm0.042$ y\\
+        minimum $0.05$ y
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softgreen}{
+        \centering\textbf{Estimation}\\[0.5em]
+        MCMC-SAEM\\
+        $70\,000$ fit iterations\\
+        $5\,000$ personalisation iterations
+      }
+    \end{column}
+  \end{columns}
+
+  \vspace{1.2em}
+  \softbox{softred}{
+    \centering
+    \textbf{Interpretation boundary:} short visit intervals and long follow-up create a favourable dense-observation setting.
+  }
+
+  \vfill
+  \slidesource{MCMC-SAEM for nonlinear mixed-effects models: \textcite{kuhn2005maximum}.}
+\end{frame}
+
+\begin{frame}{Four recovery metrics, two inference levels}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.49\textwidth}
+      \softbox{softgrey}{
+        \centering\textbf{Fixed effects / population parameters}
+      }
+      \vspace{0.4em}
+      \footnotesize
+      Define the relative error in repetition $m$ as
+      \[
+        e_m=\frac{\hat\theta^{(m)}-\theta^*}{|\theta^*|}\times100.
+      \]
+      \[
+        \mathrm{RB}=\frac{1}{M}\sum_{m=1}^{M}e_m
+      \]
+      signed systematic error; best value: $0\%$.
+
+      \[
+        \mathrm{RRMSE}=\sqrt{\frac{1}{M}\sum_{m=1}^{M}e_m^2}
+      \]
+      total error from bias and dispersion; best value: $0\%$.
+    \end{column}
+    \begin{column}{0.47\textwidth}
+      \softbox{softred}{
+        \centering\textbf{Individual random effects}
+      }
+      \vspace{0.7em}
+      \begin{block}{ICC(3,1)}
+        Consistency between true and personalised values while accounting for disagreement beyond rank ordering.
+      \end{block}
+      \begin{block}{Pearson's $r$}
+        Strength of linear association; invariant to location and scale changes.
+      \end{block}
+      \centering
+      Best value for both: $1$.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Fixed effects / population parameters: recovery}
+  \centering
+  \small
+  \setlength{\tabcolsep}{4.5pt}
+  \renewcommand{\arraystretch}{1.28}
+  \resizebox{\linewidth}{!}{%
+  \begin{tabular}{lclcc}
+    \toprule
+    Component & Parameters & Interpretation & RB (\%) & RRMSE (\%)\\
+    \midrule
+    Temporal & $t_0,\sigma_\tau,\sigma_\xi$ & reference and variability
+      & $0.03$ to $0.44$ & $0.83$ to $2.32$\\
+    Survival & $\rho,\nu$ & Weibull shape and scale
+      & $0.10$ to $2.33$ & $5.01$ to $5.43$\\
+    Noise & $\sigma^{(0:3)}$ & observation noise
+      & $-4.60$ to $-1.26$ & $1.47$ to $4.73$\\
+    Position & $g^{(0:3)}$ & logistic position
+      & $-8.80$ to $-5.92$ & $8.09$ to $12.61$\\
+    Velocity & $v_0^{(0:3)}$ & logistic velocity
+      & $1.12$ to $6.46$ & $4.52$ to $10.53$\\
+    \bottomrule
+  \end{tabular}}
+
+  \vspace{0.9em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\textwidth}
+      \softbox{softgreen}{
+        \textbf{Best recovered:} temporal population parameters, supported by many repeated observations per patient.
+      }
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \softbox{softred}{
+        \textbf{Hardest:} trajectory positions $g$ and bulbar velocity $v_0^{(0)}$, which can compensate for each other.
+      }
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Individual random effects: recovery (1/2)}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.59\textwidth}
+      \centering
+      \small
+      \renewcommand{\arraystretch}{1.23}
+      \begin{tabular}{lcc}
+        \toprule
+        Effect & ICC(3,1) & Pearson's $r$\\
+        \midrule
+        $\xi_i$ & $0.988\pm0.004$ & $0.989\pm0.004$\\
+        $\tau_i$ & $0.995\pm0.002$ & $0.995\pm0.002$\\
+        $w_{i,0}$ & $0.987\pm0.006$ & $0.992\pm0.003$\\
+        $w_{i,1}$ & $0.989\pm0.003$ & $0.990\pm0.003$\\
+        $w_{i,2}$ & $0.990\pm0.003$ & $0.991\pm0.003$\\
+        $w_{i,3}$ & $0.987\pm0.003$ & $0.988\pm0.003$\\
+        $(\boldsymbol\zeta^\top\mathbf s_i)_0$
+          & $0.965\pm0.027$ & $0.978\pm0.013$\\
+        \bottomrule
+      \end{tabular}
+
+      \vspace{0.3em}
+      \scriptsize Mean $\pm$ standard deviation across repetitions.
+    \end{column}
+    \begin{column}{0.38\textwidth}
+      \softbox{softgreen}{
+        \textbf{Strong agreement} for every evaluated individual effect: all ICCs exceed $0.96$.
+      }
+
+      \vspace{0.7em}
+      \softbox{softred}{
+        The \textbf{survival shift} is least precise: it is informed by at most one possibly censored event per patient.
+      }
+
+      \vspace{0.7em}
+      \scriptsize Source coordinates $\mathbf s_i$ are rotation-dependent, so invariant feature shifts
+      $\mathbf w_i=\mathbf A\mathbf s_i$ and survival shifts are compared instead.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Individual random effects: recovery (2/2)}
+  \centering
+  \includegraphics[width=\textwidth]{figures/Indiv_multivariate.png}
+
+  \scriptsize Dashed red: identity; grey: linear fit. Points are pooled over patients and repetitions.
+\end{frame}
+
+% ============================================================================
+\section{Takeaways and responsibility}
+
+\begin{frame}{Take-home messages}
+  \begin{enumerate}
+    \item \textbf{Model:} Leaspy aligns nonlinear multivariate trajectories through an interpretable latent disease age.
+    \item \textbf{Contribution:} joint simulation is integrated into the standard API, including survival, censoring, and competing events.
+    \item \textbf{Validation:} the simulate--fit--personalise pipeline is self-consistent in the favourable dense setting studied.
+    \item \textbf{Statistical lesson:} temporal and individual effects are recovered very well; trajectory positions and survival-related quantities are less precisely identified.
+  \end{enumerate}
+
+  \vspace{1em}
+  \takeaway{Simulation is both a software feature and the instrument used to validate that feature.}
+\end{frame}
+
+\begin{frame}{Ethical and sustainability considerations \hfill \CSonly}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.31\textwidth}
+      \softbox{softgrey}{
+        \centering\textbf{Patient privacy}\\[0.45em]
+        \small Synthetic cohorts do not correspond to real patients and can facilitate sharing.\\[0.45em]
+        They still require clear labelling, provenance, governance, and disclosure-risk assessment.
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softred}{
+        \centering\textbf{Computational cost}\\[0.45em]
+        \small $200$ fits $\times$ $70\,000$ iterations plus personalisation is not negligible.\\[0.45em]
+        Small preliminary runs and saved intermediates avoid unnecessary recomputation.
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softgreen}{
+        \centering\textbf{Software responsibility}\\[0.45em]
+        \small Errors can propagate into scientific conclusions.\\[0.45em]
+        Unit tests, functional tests, documentation, and peer review are part of methodological rigour.
+      }
+    \end{column}
+  \end{columns}
+
+  \vfill
+  \takeaway{Synthetic does not mean risk-free, and reproducible does not mean cost-free.}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References}
+  \printbibliography[heading=none]
+\end{frame}
+
+% ============================================================================
+\appendix
+\section{Supplementary material}
+
+\begin{frame}{Appendix: full longitudinal model}
+  \footnotesize
+  \[
+  \left\{
+  \begin{aligned}
+    \psi_i(t) &= e^{\xi_i}(t-\tau_i)+t_0,\\
+    \mathbf w_i &= \mathbf A\mathbf s_i,\\
+    \gamma_{i,j}(t)
+      &=\left[1+g_j\exp\!\left(-\frac{(1+g_j)^2}{g_j}
+        \left(v_{0,j}(\psi_i(t)-t_0)+w_{i,j}\right)\right)\right]^{-1},\\
+    y_{i,r,j} &= \gamma_{i,j}(t_{i,r,j})+\epsilon_{i,r,j},
+      \qquad \epsilon_{i,r,j}\sim\mathcal N(0,\sigma_j^2).
+  \end{aligned}
+  \right.
+  \]
+
+  \vspace{0.8em}
+  \begin{itemize}
+    \item $p_j=1/(1+g_j)$ is the population trajectory value at $t_0$.
+    \item $v_{0,j}$ controls the velocity at the reference time.
+    \item $w_{i,j}$ changes the relative ordering of feature trajectories.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Appendix: survival and latent-source coupling}
+  \footnotesize
+  \begin{block}{Single-event survival on disease age}
+    \[
+      S_i(t)=\mathbf 1_{\psi_i(t)>t_0}
+      \exp\!\left[-\left(\frac{\psi_i(t)-t_0}{\nu}\right)^\rho\right]
+      +\mathbf 1_{\psi_i(t)\le t_0}.
+    \]
+  \end{block}
+
+  \begin{block}{Event-specific scale with sources}
+    For event $l$,
+    \[
+      \nu_{i,l}=\nu_l\exp\!\left[-\xi_i-
+      \frac{1}{\rho_l}(\boldsymbol\zeta^\top\mathbf s_i)_l\right].
+    \]
+  \end{block}
+
+  \begin{itemize}
+    \item Each competing event has its own Weibull pair $(\nu_l,\rho_l)$.
+    \item $\mathrm{CIF}_{i,l}(t)$ gives the probability that cause $l$ has occurred by $t$ in the presence of competing causes.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Appendix: discrete event sampling in Leaspy}
+  \small
+  \[
+  F_i^{\mathrm{cond}}(t_{i,r})=
+  \begin{cases}
+    1-S_i(t_{i,r})/S_i(t_{i,0}), & \text{single event},\\[0.5em]
+    \displaystyle\sum_{l=1}^{L}\mathrm{CIF}_{i,l}(t_{i,r})/S_i(t_{i,0}),
+      & \text{competing events}.
+  \end{cases}
+  \]
+
+  \begin{enumerate}
+    \item Draw $U\sim\mathcal U[0,1]$.
+    \item Select the first planned visit where $F_i^{\mathrm{cond}}(t_{i,r})\ge U$.
+    \item If no visit crosses $U$, right-censor at the last visit.
+    \item For competing risks, sample the cause from incremental cause-specific CIFs.
+  \end{enumerate}
+
+  \takeaway{This ensures internal API reuse, but discretises event times onto the visit grid.}
+\end{frame}
+
+\begin{frame}{Appendix: exact population recovery values}
+  \centering
+  \tiny
+  \renewcommand{\arraystretch}{1.08}
+  \setlength{\tabcolsep}{4.8pt}
+  \begin{tabular}{lrr@{\qquad}lrr}
+    \toprule
+    Parameter & RB (\%) & RRMSE (\%) & Parameter & RB (\%) & RRMSE (\%)\\
+    \midrule
+    $g^{(0)}$ & $-8.27$ & $11.41$ & $v_0^{(0)}$ & $6.46$ & $10.53$\\
+    $g^{(1)}$ & $-8.80$ & $12.61$ & $v_0^{(1)}$ & $2.23$ & $5.57$\\
+    $g^{(2)}$ & $-7.60$ & $11.16$ & $v_0^{(2)}$ & $1.12$ & $4.52$\\
+    $g^{(3)}$ & $-5.92$ & $8.09$  & $v_0^{(3)}$ & $2.05$ & $5.25$\\
+    $\rho$ & $0.10$ & $5.01$ & $\nu$ & $2.33$ & $5.43$\\
+    $\sigma^{(0)}$ & $-4.60$ & $4.73$ & $\sigma^{(1)}$ & $-4.16$ & $4.25$\\
+    $\sigma^{(2)}$ & $-3.08$ & $3.17$ & $\sigma^{(3)}$ & $-1.26$ & $1.47$\\
+    $t_0$ & $0.44$ & $0.83$ & $\sigma_\tau$ & $0.08$ & $2.32$\\
+    $\sigma_\xi$ & $0.03$ & $2.32$ & & &\\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{1em}
+  \softbox{softgrey}{
+    \small The appendix reports the exact values; the main slide groups them by model component for readability.
+  }
+\end{frame}
+
+\begin{frame}{Appendix: Bland--Altman diagnostic}
+  \centering
+  \includegraphics[width=\textwidth]{figures/bland-altman_multivariate.png}
+
+  \scriptsize Black: mean difference; red: limits of agreement. Biases are close to zero for all effects.
+\end{frame}
+
+\begin{frame}{Appendix: software-level validation}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\textwidth}
+      \softbox{softgrey}{\centering\textbf{Simulation unit tests}}
+      \begin{itemize}
+        \item non-empty random-mode output
+        \item expected patient count
+        \item strictly increasing visit times
+        \item DataFrame schedules are respected
+        \item all model features are returned
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \softbox{softred}{\centering\textbf{\texttt{estimate} functional tests}}
+      \begin{itemize}
+        \item univariate numerical correctness
+        \item raw/DataFrame consistency
+        \item MultiIndex preservation
+        \item multivariate output shape:
+          $n_{\mathrm{timepoints}}\times(J+L)$
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Appendix: limitations and next experiments}
+  \begin{block}{What the reported experiment establishes}
+    Self-consistency of the integrated pipeline for $N=1000$ under a favourable, dense visit design.
+  \end{block}
+
+  \begin{block}{What it does not establish}
+    Universal recovery under sparse visits, heavier censoring, smaller cohorts, or model misspecification.
+  \end{block}
+
+  \begin{block}{Perspectives stated in the report}
+    Vary sample size, censoring intensity, visit sparsity, and misspecification; explore more flexible visit schedules and noise models; align continuous-time event generation more closely with the grid-based implementation.
+  \end{block}
+\end{frame}
+
+\end{document}

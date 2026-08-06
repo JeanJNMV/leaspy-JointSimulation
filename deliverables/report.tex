@@ -58,7 +58,7 @@ This internship was carried out within the ARAMIS team at the Paris Brain Instit
 
 The main objective of this work was to extend the simulation capabilities of Leaspy to its joint model, which simultaneously models longitudinal outcomes and time-to-event data through a shared latent disease age. While simulation tools already existed for the standard logistic model, no integrated implementation was available for the joint model. The internship therefore involved designing and implementing a simulation pipeline compatible with this framework, including event-time generation, management of censoring, support for competing events, and integration with the library's existing \texttt{estimate} and \texttt{simulate} interfaces.
 
-A second major contribution consisted in developing a validation framework based on repeated simulation and re-estimation, in order to assess the self-consistency of the implementation and the statistical recovery of both population and individual parameters. This evaluation made it possible to identify which parameters are robustly recovered and which remain difficult to estimate in moderate-sample regimes, especially in the survival and latent-source components of the model.
+A second major contribution consisted of developing a validation framework based on repeated simulation and re-estimation, in order to assess the self-consistency of the implementation and the statistical recovery of both population and individual parameters. This evaluation made it possible to identify which parameters are robustly recovered and which remain difficult to estimate in moderate-sample regimes, especially in the survival and latent-source components of the model.
 \end{abstract}
 
 \begingroup
@@ -82,7 +82,7 @@ I also thank my supervisors Maylis Tran and Sofia Kaisaridi for their availabili
 
 I also wish to thank the members of the {ARAMIS team} for the stimulating and interdisciplinary working environment they foster. The exchanges I had with researchers, engineers, and fellow interns enriched both my understanding of computational neuroscience and my daily experience at the institute.
 
-On the academic side, I would like to thank my school tutors, {Arthur Tenenhaus} (SDI) and {Vincent Mousseau} (FMR), for their follow-up and advice throughout the internship.
+On the academic side, I would like to thank my school tutors, {Arthur Tenenhaus} (SDI) and {Vincent Mousseau} (FMR), for their follow-up throughout the internship.
 
 Finally, I extend my thanks to the {Paris Brain Institute (ICM)} and {INRIA} for providing the institutional and computational resources that made this work possible, as well as to the open-source contributors of the {Leaspy} library, whose prior work laid the foundations for my own contributions.
 \newpage
@@ -106,7 +106,7 @@ Indeed, simulation plays a central role in the development of complex statistica
 
 The main objective of this internship was therefore to contribute to the development of simulation and statistical evaluation tools for Leaspy, with a particular focus on the joint model. Concretely, the work consisted in extending the simulation pipeline to settings involving longitudinal data jointly modeled with time-to-event outcomes, integrating these developments into the existing software architecture, and validating them through dedicated numerical experiments. Beyond the implementation effort itself, the internship also aimed at assessing the self-consistency of the model and estimation procedures through simulation-based validation studies.
 
-More broadly, this work lies at the intersection of statistical modeling, scientific computing and software engineering. Because Leaspy is an open-source research library intended to be used both by methodologists and by applied researchers, contributing to it requires not only implementing new methodological features, but also ensuring code reliability, reproducibility, usability and documentation quality. In that respect, the internship included several additional contributions that are not detailed in the core chapters of this report: reviewing pull requests submitted to the library, writing and improving unit and functional tests, improving parts of the documentation, and preparing and participating in a workshop on longitudinal data where I animated a hands-on session on the simulation tools in Leaspy. Being part of the development team of an open-source library and participating in its maintenance and dissemination was a important par of the internship experience, and provided valuable insights into the challenges of scientific software development in a collaborative environment.
+More broadly, this work lies at the intersection of statistical modeling, scientific computing and software engineering. Because Leaspy is an open-source research library intended to be used both by methodologists and by applied researchers, contributing to it requires not only implementing new methodological features, but also ensuring code reliability, reproducibility, usability and documentation quality. In that respect, the internship included several additional contributions that are not detailed in the core chapters of this report: reviewing pull requests submitted to the library, writing and improving unit and functional tests, improving parts of the documentation, and preparing and participating in a workshop on longitudinal data where I animated a hands-on session on the simulation tools in Leaspy. Being part of the development team of an open-source library and participating in its maintenance and dissemination was a important part of the internship experience, and provided valuable insights into the challenges of scientific software development in a collaborative environment.
 
 This report focuses primarily on the methodological and technical contributions related to simulation and evaluation for the joint model. It first presents the scientific and software context of the Leaspy library, as well as the motivations for simulation studies in this framework. It then introduces the joint model in more detail, describes the simulation algorithm implemented during the internship and the adaptations made within Leaspy, and finally reports a validation study designed to assess parameter recovery and the consistency of the overall pipeline.
 
@@ -140,26 +140,26 @@ Compared to the other approaches, Leaspy's Disease Course Mapping framework, int
 
 \subsection{Mathematical Background}\label{sec:math-background}
 
-In the following, we consider $N$ patients $i = 1, \ldots, N$, each observed for $n_i$ visits where we measure $K$ clinical outcomes. For each visit $j$, we denote $t_{i,j,k}$ the age of the visit and $y_{i,j,k}$ the observed value of the $k$-th outcome for the patient $i$ at visit $j$. 
+In the following, we consider $N$ patients $i = 1, \ldots, N$, each observed for $n_i$ visits where we measure $K$ clinical outcomes. For each visit $j$, we denote by $t_{i,j,k}$ the age of the visit and $y_{i,j,k}$ the observed value of the $k$-th outcome for patient $i$ at visit $j$. 
 
 \subsubsection{Intuition and Riemannian Geometry Background}
 
-A key innovation of Leaspy is the interpretation of disease progression within a Riemannian geometric framework~\cite{schiratti2017bayesian}. As illustrated in Figure~\ref{fig:riemannian-pov}, the model shifts from a purely clinical perspective, where each outcome is considered independently, to a Riemannian perspective, where the joint evolution of multiple outcomes is represented as a trajectory on a product manifold. The core idea is therefore to represent the variability of the disease progression as a Riemannian manifold, where the longitudinal observation $y_{i,j,k}$ are aligned in an single individual trajectory $\gamma_i$ in the latent disease space. 
+A key innovation of Leaspy is the interpretation of disease progression within a Riemannian geometric framework~\cite{schiratti2017bayesian}. As illustrated in Figure~\ref{fig:riemannian-pov}, the model shifts from a purely clinical perspective, where each outcome is considered independently, to a Riemannian perspective, where the joint evolution of multiple outcomes is represented as a trajectory on a product manifold. The core idea is therefore to represent the variability of the disease progression as a Riemannian manifold, where the longitudinal observation $y_{i,j,k}$ are aligned along a single individual trajectory $\gamma_i$ in the latent disease space. 
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{figures/riemannian_pov.png}
-  \caption{Shift from clinical to riemannian perspective. On the left, the progression of clinical outcomes for one patient is represented depending on the age of the patient. This represents how a clinician is used to see the progression of the patient. On the right, the same patient progression is represented but this time in a disease space (manifold) built thanks to the knowledge extracted from the four clinical outcomes. This represents the Riemannian point of view of the progression of the patient.}
+  \caption{Shift from clinical to Riemannian perspective. On the left, the progression of clinical outcomes for one patient is represented as a function of the age of the patient. This represents how clinicians typically view the progression of the patient. On the right, the same patient progression is represented but this time in a disease space (manifold) built thanks to the knowledge extracted from the four clinical outcomes. This represents the Riemannian point of view of the progression of the patient.}
   \label{fig:riemannian-pov}
 \end{figure}
 
 The shape of the disease progression (linear, logistic, etc.) is determined by the choice of the Riemannian metric $G(p)$ applied to the manifold. For clinical scores exhibiting floor or ceiling effects, common in neurodegenerative disease assessment, the manifold $(0,1)$ equipped with the metric $G(p) = 1/[p^2(1-p)^2]$ yields logistic (sigmoidal) trajectories. This metric encapsulates the bounded nature of the scores in a geometrically principled way. More generally, applying the Euclidean metric on $\mathbb{R}^n$ yields for example linear trajectories, allowing the framework to accommodate diverse data types. 
 
-To separate an average disease progression from the individual progression, a mixed-effects model structure is added to the trajectories. Any trajectory $\gamma$ can be defined by the initial point $\gamma(t_0) = p$ and the initial velocity $\dot{\gamma}(t_0) = v_0$. The average disease trajectory is therefore defined by its initial condition $(t_0, p, v_0)$. From there, we can define the individual trajectories $\gamma_i(t)$ using individual time shifts $\tau_i$ and speed $\exp^{\xi_i}$. This leads to the following initial condition $(t_0 + \tau_i, p, v_0 \exp^{\xi_i})$ for each individual $i$. This parameters will be detailed in the following sections.
+To separate an average disease progression from the individual progression, a mixed-effects model structure is added to the trajectories. Any trajectory $\gamma$ can be defined by the initial point $\gamma(t_0) = p$ and the initial velocity $\dot{\gamma}(t_0) = v_0$. The average disease trajectory is therefore defined by its initial condition $(t_0, p, v_0)$. From there, we can define the individual trajectories $\gamma_i(t)$ using individual time shifts $\tau_i$ and speed $\exp^{\xi_i}$. This leads to the following initial condition $(t_0 + \tau_i, p, v_0 \exp^{\xi_i})$ for each individual $i$. These parameters will be detailed in the following sections.
 
 \subsubsection{Nonlinear Mixed-Effects Models Formalism}
 
-As we mentioned earlier, Leaspy is based on the non-linear mixed-effects models framework, which decomposes variability in longitudinal observations into two complementary components~\cite{schiratti2017bayesian}:
+As we mentioned earlier, Leaspy is based on the nonlinear mixed-effects model framework, which decomposes variability in longitudinal observations into two complementary components~\cite{schiratti2017bayesian}:
 
 \begin{itemize}
   \item \textbf{Fixed effects} (population-level): systematic trends shared across all individuals, such as the average disease trajectory, typical progression speed, and population reference time.
@@ -174,7 +174,7 @@ where $\epsilon_{i,j,k}$ is an additive noise term, typically assumed to follow 
 
 \subsubsection{Random Effects and Latent Disease Age}
 
- Individual trajectories $\gamma_i(t)$ are derived from the average trajectorythrough three types of random effects:
+ Individual trajectories $\gamma_i(t)$ are derived from the average trajectory through three types of random effects:
 
 \begin{itemize}
   \item \textbf{Time shift} $\tau_i \sim \mathcal{N}(t_0, \sigma_\tau^2)$: earlier or later disease onset relative to the population average, where $\sigma_\tau$ is the inter-individual standard deviation of onset times.
@@ -196,20 +196,20 @@ The effects of all random effects are described in Figure~\ref{fig:random-effect
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{figures/random_effects.png}
-  \caption{This figure presents from two points of view (clinical and Riemannian) how the three types of random effects (two temporal and one spatial) enable to modify the population average progression to calibrate the patient observations. 
-  \textbf{Clinical}: Two normalised clinical scores (blue and orange) depending on the age of the patients. The scatter represents the real observed values for one patient at different visits. 
+  \caption{This figure presents from two points of view (clinical and Riemannian) how the three types of random effects (two temporal and one spatial) make it possible to modify the population average progression to calibrate the patient observations. 
+  \textbf{Clinical}: Two normalised clinical scores (blue and orange) as functions of age of the patients. The scatter represents the real observed values for one patient at different visits. 
   \textbf{Riemannian}: The same two normalised scores are represented but this time depending on each other. The scatter represents the same real observed values as in the clinical version. The black cross on the curve corresponds to what is modelled at the visit ages of the patient \cite{koval2021ad}.}
   \label{fig:random-effects}
 \end{figure}
 
 \subsection{Fixed Effects and Population Parameters}
 
-To model the longitudinal process, we will consider logistic trajectories using the metric $G(p) = 1/[p^2(1-p)^2]$ on the manifold $(0,1)$, which is appropriate for bounded clinical scores. From theren, we can derive the average curve for outcome $k$ at time $t$ as:
+To model the longitudinal process, we will consider logistic trajectories using the metric $G(p) = 1/[p^2(1-p)^2]$ on the manifold $(0,1)$, which is appropriate for bounded clinical scores. From there, we can derive the average curve for outcome $k$ at time $t$ as:
 
 \begin{equation}
   \gamma_{0,k}(t) = \left(1 + g_k \times \exp \left(-\frac{(1+g_k)^2}{g_k} (v_{0,k}(t-t_0))\right)\right)^{-1},
 \end{equation}
-where $t_0$ is the population estimated reference time, $v_{0,k}$ is the speed of the logistic curves at $t_0$, and $p_k = \frac{1}{1+g_k}$ is the value of the modelled outcome at $t_0$. We also get the individual trajectory for patient $i$ and outcome $k$ at time $t$ as:
+where $t_0$ is the estimated population reference time, $v_{0,k}$ is the speed of the logistic curves at $t_0$, and $p_k = \frac{1}{1+g_k}$ is the value of the modelled outcome at $t_0$. We also get the individual trajectory for patient $i$ and outcome $k$ at time $t$ as:
 
 \begin{equation}
   \gamma_{i,k}(t) = \left(1 + g_k \times \exp \left(-\frac{(1+g_k)^2}{g_k} (v_{0,k} (\psi_i(t) - t_0) + w_{i,k})\right)\right)^{-1},
@@ -217,7 +217,7 @@ where $t_0$ is the population estimated reference time, $v_{0,k}$ is the speed o
 
 \subsection{Wrap-up and Optimization Procedure}
 
-To sum up, the model can be resumed by the following equations for an individual $i$ and an outcome $k$:
+To sum up, the model can be summarized by the following equations for an individual $i$ and an outcome $k$:
 
 \begin{equation}
 \left\{
@@ -230,7 +230,7 @@ To sum up, the model can be resumed by the following equations for an individual
 \right.
 \end{equation}
 
-To perform the optimization procedure, we first compute the likelihood of the model given the observations. For simplification, let $y$ denote the observed data, $z = (z_{\mathrm{fe}}, z_{\mathrm{re}})$ the latent fixed and random effects, $\theta$ the model parameters, and $\Pi$ the known hyperparameters. Parameter estimation is performed by maximizing the following marginal likelihood:
+To perform the optimization procedure, we first compute the likelihood of the model given the observations. For simplicity, let $y$ denote the observed data, $z = (z_{\mathrm{fe}}, z_{\mathrm{re}})$ the latent fixed and random effects, $\theta$ the model parameters, and $\Pi$ the known hyperparameters. Parameter estimation is performed by maximizing the following marginal likelihood:
 \begin{equation}
   p(y \mid \theta, \Pi) = \int_{z} p(y, z \mid \theta, \Pi)\, dz,
 \end{equation}
@@ -291,7 +291,7 @@ Kaisaridi et al.\ applied Leaspy to 395 patients from the French CADASIL referra
 
 
 \paragraph{Amyotrophic lateral sclerosis (ALS).}
-The joint cause-specific spatiotemporal model was validated on data from the PRO-ACT dataset (over 2,100 ALS patients). The model jointly analyzes three longitudinal clinical scoresalong with two competing events through a shared latent disease age. On a 10-fold cross-validation benchmark, the model achieved systematically better event discrimination than the baseline shared-random-effect joint model, while using fewer parameters and avoiding the need for a precise reference onset time~\cite{ortholand2026joint}.
+The joint cause-specific spatiotemporal model was validated on data from the PRO-ACT dataset (over 2,100 ALS patients). The model jointly analyzes three longitudinal clinical scores along with two competing events through a shared latent disease age. On a 10-fold cross-validation benchmark, the model achieved systematically better event discrimination than the baseline shared-random-effect joint model, while using fewer parameters and avoiding the need for a precise reference onset time~\cite{ortholand2026joint}.
 
 %\subsubsection{Related approaches.}
 %Leaspy belongs to the broader family of data-driven disease progression models, a field that has developed rapidly since the early 2010s~\cite{oxtoby2023data,young2024data}. These methods can be organized along two axes: the type of data they require (cross-sectional vs.\ longitudinal) and whether they estimate a single disease timeline or multiple subtypes.
@@ -395,7 +395,7 @@ Once these inputs have been defined, the algorithm proceeds in six sequential st
   \item \textbf{Simulate age at first visit}. The age at first visit is drawn as $t_{i,0} = \tau_i + \delta_{f_i}$, where $\delta_{f_i} \sim \mathcal{N}(\bar{\delta}_f, \sigma_{\delta_f}^2)$ is a random offset relative to the patient's estimated disease onset. 
   \item \textbf{Simulate visit schedule}. Inter-visit intervals $\delta_{v_{i,j}} \sim \mathcal{N}(\bar{\delta}_v, \sigma_{\delta_v}^2)$ and a total follow-up duration $T_{f_i} \sim \mathcal{N}(\overline{T_f}, \sigma_{T_f}^2)$ determine the visit times $t_{i,0} < t_{i,1} < \cdots < t_{i,n_i}$, where $n_i$ is the number of visits satisfying $t_{i,j} \leq t_{i,0} + T_{f_i}$.
   \item \textbf{Simulate longitudinal outcomes}. The latent disease age $\psi_i(t_{i,j})$ is computed for each visit. The expected outcome value is then $\gamma_0(\psi_i(t_{i,j}))$ as defined by the logistic trajectory. Observed outcomes are sampled with Beta noise to match the bounded nature of clinical scores, with the trajectory value used as the distribution mean.
-  \item \textbf{Simulate event times}. The event time $T_{e_i}$ is drawn from the Weibull survival distribution implied by the latent disease age. Using the inverse-transform method, this is equivalent to: $T_{e_i} \sim e^{-\xi_i}\, \mathcal{W}(\nu, \rho) + \tau_i$, where $\mathcal{W}(\nu, \rho)$ denotes the Weibull distribution with scale $\nu$ and shape $\rho$.
+  \item \textbf{Simulate event times}. The event time $T_{e_i}$ is drawn from the Weibull survival distribution implied by the latent disease age. Using the inverse-transform method, this is equivalent to $T_{e_i} \sim e^{-\xi_i}\, \mathcal{W}(\nu, \rho) + \tau_i$, where $\mathcal{W}(\nu, \rho)$ denotes the Weibull distribution with scale $\nu$ and shape $\rho$.
   \item \textbf{Apply censoring}. The event time and visit schedule are reconciled by applying two censoring rules: (i) all visits occurring after the event ($t_{i,j} > T_{e_i}$) are removed from the follow-up; (ii) events occurring after the last remaining visit ($T_{e_i} > t_{i,\max(j)}$) are treated as right-censored. This produces the observed tuple $(y_{i,j}, T_{e_i}, B^e_i)$, where the censoring indicator $B^e_i = 1$ if the event was observed and $B^e_i = 0$ if it was censored.
 \end{enumerate}
 
@@ -410,7 +410,7 @@ The Leaspy implementation follows the six-step procedure above and introduces th
 \paragraph{Visit schedule modes.}
 The implementation supports two distinct visit generation modes. In the \textit{random} mode, the visit schedule is generated stochastically following steps~2 and~3 above, driven by the study parameters supplied by the user. In the \textit{dataframe} mode, the user instead provides an explicit DataFrame specifying each patient's identifier and visit times directly, bypassing steps~2 and~3 entirely. Individual parameters are then sampled from the fitted population distributions for each patient listed in the DataFrame, in the order they appear.
 
-\paragraph{Data driven estimation of study parameters.}
+\paragraph{Data-driven estimation of study parameters.}
 As an extension developed in this work, when the user does not supply some or all study parameters for the \textit{random} mode, they can instead provide a dataset, usually the same dataset used to fit the model. In that case, the missing parameters are estimated automatically from the observed visit process. Specifically, $\bar{\delta}_f$ is set to zero by construction, since the empirical mean of centered first-visit ages is zero by definition; $\sigma_{\delta_f}$ is taken as the empirical standard deviation of observed first-visit ages across patients, which serves as a proxy for the dispersion of the first-visit offset from disease onset, given that the individual disease onsets $\tau_i$ are not directly observable. The parameters $\overline{T_f}$ and $\sigma_{T_f}$ are obtained from the empirical distribution of per-patient follow-up durations (last minus first visit), and $\bar{\delta}_v$ and $\sigma_{\delta_v}$ are estimated from the distribution of all observed inter-visit gaps. This feature is not present in the base simulation algorithm of Leaspy for the logistic model; it introduces a dependency on the training data and breaks the strict separation between the generative mechanism and the observed sample, which should be kept in mind when interpreting simulation results.
 
 %\paragraph{Standardization of latent sources.}When the model includes latent sources ($K \geq 1$), the source components $s_{i,k}$ for each dimension $k$ are first drawn independently from $\mathcal{N}(0, 1)$ and then standardized across the simulated cohort: each source dimension is empirically recentered and rescaled to unit variance. This ensures that the sources are approximately orthogonal to the mean in finite samples, reproducing the centering constraint that is imposed during model fitting.
@@ -429,20 +429,20 @@ Inverse-transform sampling is then applied on this discrete grid: a uniform draw
 Two consequences follow from this design. First, because the CDF is evaluated only at the planned visit times, event times are constrained to lie on the visit grid rather than being continuous. Second, because the sampling is conditioned on survival at $t_{i,0}$, the event can never be placed before the first planned visit.
 
 \paragraph{Beta noise with variance clamping.}
-Longitudinal outcomes are sampled from a Beta distribution with mean $\mu = \gamma_0(\psi_i(t_{i,j}))$ and variance $\sigma^2$ taken from the fitted noise model. A Beta distribution with mean $\mu$ is only well defined when $\sigma^2 < \mu(1 - \mu)$; this constraint can be violated when the trajectory approaches 0 or 1, that is when the patient is near the floor or ceiling of a clinical score. In such cases the implementation clamps the variance to $0.99\,\mu(1-\mu)$ and emits a warning identifying the affected patient, visit time, and feature.
+Longitudinal outcomes are sampled from a Beta distribution with mean $\mu = \gamma_0(\psi_i(t_{i,j}))$ and variance $\sigma^2$ taken from the fitted noise model. A Beta distribution with mean $\mu$ is only well defined when $\sigma^2 < \mu(1 - \mu)$; this constraint can be violated when the trajectory approaches 0 or 1, that is, when the patient is near the floor or ceiling of a clinical score. In such cases the implementation clamps the variance to $0.99\,\mu(1-\mu)$ and emits a warning identifying the affected patient, visit time, and feature.
 
 \paragraph{Censoring after rounding.}
 The minimum visit spacing filter operates by rounding visit times to the decimal precision compatible with \texttt{min\_spacing\_between\_visits} and removing duplicate time points. Because rounding can advance a visit time beyond the event time, a final censoring pass is applied after rounding: any visit whose rounded time exceeds the patient's event time is removed from the dataset. This step is not part of the original six-step procedure but is required by the discrete-grid implementation to preserve the constraint that all longitudinal observations precede the event.
 
 \paragraph{Generalization to competing events.}
-In the single-event case the event indicator is set to 1 whenever the event time falls within the follow-up window. In the competing-events case ($L > 1$), the event type $l^*$ is drawn at the identified visit time by treating the incremental cause-specific CIF as unnormalized probabilities:
+In the single-event case the event indicator is set to 1 whenever the event time falls within the follow-up window. In the competing-events case ($L > 1$), the event type $l^*$ is drawn at the identified visit time by treating the incremental cause-specific CIF values as unnormalized probabilities:
 \begin{equation}
 p(l^* = l) \;\propto\; \max\left(\text{CIF}_{i,l}(t_{i,j}) - \text{CIF}_{i,l}(t_{i,j-1}),\; 0\right),
 \end{equation}
 and the censoring indicator is set to $B^e_i = l^*$, following the convention that $B^e_i = 0$ denotes censoring and $B^e_i = l$ denotes cause-$l$ event.
 
 \paragraph{Test coverage in the library.}
-The implementation includes unit and functional tests integrated into the Leaspy test suite. Two unit tests cover the \texttt{JointSimulationAlgorithm}: the \textit{random} visit mode is checked for a non-empty dataset, the expected number of patients, and strictly increasing visit times, while the \textit{dataframe} mode ensures that simulated visits remain within the user-provided schedule and that all model features are returned. Four functional tests cover the extended joint model's \texttt{estimate} method: numerical correctness for a univariate model, consistency between raw and DataFrame outputs, automatic DataFrame output and index preservation for \texttt{pd.MultiIndex} inputs, and the expected multivariate output shape $(n_{\text{timepoints}},, n_{\text{features}} + L)$, where $L$ is the number of events.
+The implementation includes unit and functional tests integrated into the Leaspy test suite. Two unit tests cover the \texttt{JointSimulationAlgorithm}: the \textit{random} visit mode is checked for a non-empty dataset, the expected number of patients, and strictly increasing visit times, while the \textit{dataframe} mode ensures that simulated visits remain within the user-provided schedule and that all model features are returned. Four functional tests cover the extended joint model's \texttt{estimate} method: numerical correctness for a univariate model, consistency between raw and DataFrame outputs, automatic DataFrame output and index preservation for \texttt{pd.MultiIndex} inputs, and the expected multivariate output shape $(n_{\text{timepoints}}, n_{\text{features}} + L)$, where $L$ is the number of events.
 
 %\paragraph{Test coverage in the library.}The implementation is accompanied by unit and functional tests integrated into the Leaspy test suite. On the simulation side, two unit tests cover the \texttt{JointSimulationAlgorithm}: one verifies the \textit{random} visit mode by checking that the output dataset is non-empty, contains the expected number of patients, and that visit times are strictly increasing within each individual; the other verifies the \textit{dataframe} visit mode by checking that all simulated visits belong to the user-supplied input schedule (the algorithm may drop visits after a simulated event, but must not introduce new time points) and that all model features are present in the output. On the \texttt{estimate} method side, four functional tests cover the extended joint model behaviour: one checks numerical correctness of the returned values for a univariate model against hardcoded expectations; one verifies that \texttt{to\_dataframe=True} produces a \texttt{DataFrame} with columns \texttt{model.features + model.event\_features} whose values are consistent with the raw dictionary output; one checks that passing a \texttt{pd.MultiIndex} as timepoints automatically activates the DataFrame output mode and preserves the original index ordering; and one tests the multivariate case, verifying that the output shape is $(n_{\text{timepoints}},\, n_{\text{features}} + L)$ where $L$ is the number of events.
 
@@ -569,7 +569,7 @@ Each synthetic cohort contains $N = 1000$ patients, and the experiment is repeat
 \subsection{Results and Interpretation}
 \subsubsection{Population parameter recovery}
 
-Table \ref{tab:population_recovery} and Figure \ref{fig:ree_all} summarise the results of the population parameter recovery. 
+Table \ref{tab:population_recovery} and Figure \ref{fig:ree_all} summarise the population-parameter recovery results. 
 
 The parameters governing the population distribution of the temporal random effects are recovered particularly well. The relative biases of $t_0$, $\sigma_\tau$, and $\sigma_\xi$ are respectively $0.44\%$, $0.08\%$, and $0.03\%$, with RRMSE values below $2.4\%$. Their estimates are also stable across repetitions, as indicated by RSE values between $0.007$ and $0.023$. This strong recovery is consistent with the dense longitudinal design used in the experiment. The large number of repeated observations per patient provides substantial information on both the location and the rate of each individual trajectory, allowing the population mean of the time shifts and the variability of the time shifts and accelerations to be estimated precisely.
 
@@ -620,9 +620,9 @@ $\sigma_\xi$   & 1.078  & 1.079  & $0.03\ [-0.27,\,0.37]$    & $2.32\ [2.11,\,2.
 
 Table \ref{tab:metrics}, Figures \ref{fig:param_comparison} and \ref{fig:bland-altman} compare the true individual effects used for simulation with the values estimated after fitting and personalisation. 
 
-Overall, individual recovery is excellent between the individual effects used to generate the data and those recovered after fitting and personalisation. The time shift $\tau_i$ is the most accurately recovered effect, with an ICC of $0.995$. The log acceleration $\xi_i$ has an ICC of $0.988$, while the four feature-level spatial shifts obtained from $\mathbf{w}_i=\mathbf{A}\mathbf{s}_i$ have ICC values between $0.987$ and $0.990$. Their Pearson correlations range from $0.988$ to $0.992$. These results show that the feature-specific trajectory displacements are accurately recovered after accounting for the rotational non-identifiability of the latent source coordinates.
+Overall, agreement is excellent between the individual effects used to generate the data and those recovered after fitting and personalisation. The time shift $\tau_i$ is the most accurately recovered effect, with an ICC of $0.995$. The log acceleration $\xi_i$ has an ICC of $0.988$, while the four feature-level spatial shifts obtained from $\mathbf{w}_i=\mathbf{A}\mathbf{s}_i$ have ICC values between $0.987$ and $0.990$. Their Pearson correlations range from $0.988$ to $0.992$. These results show that the feature-specific trajectory displacements are accurately recovered after accounting for the rotational non-identifiability of the latent source coordinates.
 
-The recovery accuracy is homogeneous across the four longitudinal outcomes. The ICC values are $0.987$, $0.989$, $0.990$, and $0.987$ for $w_{i,0}$ to $w_{i,3}$, respectively, with small between-repetition standard deviations. The survival shift $(\boldsymbol{\zeta}^{\top}\mathbf{s}_i)_0$ is the least accurately recovered individual effect, with an ICC of $0.965 \pm 0.027$. This still represents strong agreement. Its comparatively lower precision is consistent with the limited information available for the survival process, since it is inferred from a single possibly censored event time per patient rather than from a sequence of repeated measurements.
+Recovery accuracy is consistent across the four longitudinal outcomes. The ICC values are $0.987$, $0.989$, $0.990$, and $0.987$ for $w_{i,0}$ to $w_{i,3}$, respectively, with small between-repetition standard deviations. The survival shift $(\boldsymbol{\zeta}^{\top}\mathbf{s}_i)_0$ is the least accurately recovered individual effect, with an ICC of $0.965 \pm 0.027$. This still represents strong agreement. Its comparatively lower precision is consistent with the limited information available for the survival process, since it is inferred from a single possibly censored event time per patient rather than from a sequence of repeated measurements.
 
 \begin{table}[hbtp]
 \centering
@@ -642,7 +642,7 @@ $(\boldsymbol{\zeta}^\top \mathbf{s}_i)_0$ & $0.965 \pm 0.027$ & $0.978 \pm 0.01
 \label{tab:metrics}
 \end{table}
 
-In the scatter plots, one may nevertheless notice a visible concentration of points around estimated values close to zero for some random effects. This pattern could reflect the posterior shrinkage induced by the personalisation step. In finite samples, estimated individual effects are pulled slightly toward the population mean, which is zero for the centred latent effects. This happens especially for individuals with one or few observations, whose personalisation is less informed by data and more influenced by the prior distribution. This phenomenon does not appear when comparing two personalised quantities, such as the reference model and the $m$ fitted model, because both undergo the same restriction. Importantly, this visual effect should not be over-interpreted: despite this mild shrinkage, the agreement metrics remain very good, with ICC values above $0.96$ for all individual effects.
+In the scatter plots, one may nevertheless notice a visible concentration of points around estimated values close to zero for some random effects. This pattern could reflect the posterior shrinkage induced by the personalisation step. In finite samples, estimated individual effects are pulled slightly toward the population mean, which is zero for the centred latent effects. This happens especially for individuals with one or a few observations, whose personalisation is less informed by data and more influenced by the prior distribution. This phenomenon does not appear when comparing two personalised quantities, such as the reference model and the $m$-th fitted model, because both undergo the same restriction. Importantly, this visual effect should not be over-interpreted: despite this mild shrinkage, the agreement metrics remain very good, with ICC values above $0.96$ for all individual effects.
 
 \begin{figure}[htbp]
   \centering
@@ -651,7 +651,7 @@ In the scatter plots, one may nevertheless notice a visible concentration of poi
   \label{fig:param_comparison} 
 \end{figure}
 
-The Bland Altman analysis confirms the absence of substantial systematic error. The mean differences between estimated and true values are close to zero for all effects. The largest mean difference concerns $\tau_i$, at $0.239$ years, which is small relative to the population standard deviation $\sigma_\tau=11.63$ years. For the four feature-level spatial shifts, the biases have absolute values at most $0.0011$, and the limits of agreement remain narrow and centred close to zero. Taken together, these results show that the personalisation procedure reliably recovers the individual temporal, spatial, and survival heterogeneity in the favourable dense observation setting considered here.
+The Bland-Altman analysis confirms the absence of substantial systematic error. The mean differences between estimated and true values are close to zero for all effects. The largest mean difference concerns $\tau_i$, at $0.239$ years, which is small relative to the population standard deviation $\sigma_\tau=11.63$ years. For the four feature-level spatial shifts, the biases have absolute values at most $0.0011$, and the limits of agreement remain narrow and centred close to zero. Taken together, these results show that the personalisation procedure reliably recovers the individual temporal, spatial, and survival heterogeneity in the favourable dense observation setting considered here.
 
 \begin{figure}[htbp]
   \centering

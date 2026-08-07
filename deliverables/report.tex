@@ -56,7 +56,7 @@
 \begin{abstract}
 This internship was carried out within the ARAMIS team at the Paris Brain Institute (ICM) and focused on the development of simulation and statistical evaluation tools for Leaspy, an open-source Python library dedicated to the analysis of multivariate longitudinal data in neurodegenerative diseases. Leaspy relies on non-linear mixed-effects models to reconstruct disease progression trajectories, align patients on a common latent disease timeline, and estimate individual progression parameters from repeated clinical observations.
 
-The main objective of this work was to extend the simulation capabilities of Leaspy to its joint model, which simultaneously models longitudinal outcomes and time-to-event data through a shared latent disease age. While simulation tools already existed for the standard logistic model, no integrated implementation was available for the joint model. The internship therefore involved designing and implementing a simulation pipeline compatible with this framework, including event-time generation, management of censoring, support for competing events, and integration with the library's existing \texttt{estimate} and \texttt{simulate} interfaces.
+The main objective of this work was to extend the simulation capabilities of Leaspy to its joint model, which simultaneously models longitudinal outcomes and time-to-event data through a shared latent disease age. While simulation tools already existed for the standard logistic model, no integrated implementation was available for the joint model. The internship therefore involved designing and implementing a simulation pipeline compatible with this framework, including event-time generation, management of censoring, support for competing events, and integration within the library's existing \texttt{estimate} and \texttt{simulate} interfaces.
 
 A second major contribution consisted of developing a validation framework based on repeated simulation and re-estimation, in order to assess the self-consistency of the implementation and the statistical recovery of both population and individual parameters. This evaluation made it possible to identify which parameters are robustly recovered and which remain difficult to estimate in moderate-sample regimes, especially in the survival and latent-source components of the model.
 \end{abstract}
@@ -149,7 +149,7 @@ A key innovation of Leaspy is the interpretation of disease progression within a
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{figures/riemannian_pov.png}
-  \caption{Shift from clinical to Riemannian perspective. On the left, the progression of clinical outcomes for one patient is represented as a function of the age of the patient. This represents how clinicians typically view the progression of the patient. On the right, the same patient progression is represented but this time in a disease space (manifold) built thanks to the knowledge extracted from the four clinical outcomes. This represents the Riemannian point of view of the progression of the patient.}
+  \caption{Shift from clinical to Riemannian perspective (from \cite{ortholand2024phd}). On the left, the progression of clinical outcomes for one patient is represented as a function of the age of the patient. This represents how clinicians typically view the progression of the patient. On the right, the same patient progression is represented but this time in a disease space (manifold) built thanks to the knowledge extracted from the four clinical outcomes. This represents the Riemannian point of view of the progression of the patient.}
   \label{fig:riemannian-pov}
 \end{figure}
 
@@ -507,7 +507,7 @@ If the simulation algorithm correctly implements the joint model structure, and 
           node[midway, above=15pt, font=\footnotesize\itshape]
                {repeated $M$ times};
   \end{tikzpicture}}%
-  \caption{Simulation-based evaluation pipeline used to assess the self-consistency of the joint model. Starting from a reference model with known population parameters $\theta^{*}$, the simulation algorithm generates a synthetic cohort $m$ containing longitudinal measurements $y_{i,j}^{(m)}$, event times $T_{e_i}^{(m)}$, and censoring indicators $(B_i^e)^{(m)}$, together with the true individual parameters used for generation. A fresh model is fitted to each cohort to obtain $\hat{\theta}^{(m)}$, and is then personalised to recover the individual parameters $(\hat{\tau}_i^{(m)},\hat{\xi}_i^{(m)},\ldots)$. This simulation, fitting, and personalisation procedure is repeated $M$ times. Population-level recovery is evaluated by comparing $\hat{\theta}^{(m)}$ with $\theta^{*}$ using REE, RB, RRMSE, and RSE, while individual-level recovery is evaluated by comparing true and estimated random effects using the ICC and Bland--Altman analysis.}
+  \caption{Simulation-based evaluation pipeline used to assess the self-consistency of the joint model. Starting from a reference model with known population parameters $\theta^{*}$, the simulation algorithm generates a synthetic cohort $m$ containing longitudinal measurements $y_{i,j}^{(m)}$, event times $T_{e_i}^{(m)}$, and censoring indicators $(B_i^e)^{(m)}$, together with the true individual parameters used for generation. A fresh model is fitted to each cohort to obtain $\hat{\theta}^{(m)}$, and is then personalised to recover the individual parameters $(\hat{\tau}_i^{(m)},\hat{\xi}_i^{(m)},\ldots)$. This simulation, fitting, and personalisation procedure is repeated $M$ times. Population-level recovery is evaluated by comparing $\hat{\theta}^{(m)}$ with $\theta^{*}$ using REE, RB, RRMSE, and RSE, while individual-level recovery is evaluated by comparing true and estimated random effects using the ICC and Bland-Altman analysis.}
   \label{fig:eval-principle}
 \end{figure}
 
@@ -580,7 +580,6 @@ The least accurately recovered population parameters are the trajectory position
 
 \begin{table}[htbp]
 \centering
-\caption{Population parameter recovery metrics.}
 \label{tab:population_recovery}
 \footnotesize 
 \setlength{\tabcolsep}{3.5pt}
@@ -607,6 +606,7 @@ $\sigma_\tau$  & 11.630 & 11.639 & $0.08\ [-0.24,\,0.38]$    & $2.32\ [2.10,\,2.
 $\sigma_\xi$   & 1.078  & 1.079  & $0.03\ [-0.27,\,0.37]$    & $2.32\ [2.11,\,2.56]$    & $0.023\ [0.021,\,0.026]$ \\
 \hline
 \end{tabular}
+\caption{Recovery of the population parameters across $M=200$ independently simulated cohorts of $N=1000$ patients. For each parameter, $\theta^{*}$ is the value of the reference model used to generate the cohorts and $\bar{\hat{\theta}}$ is the mean of the $M$ estimates obtained after fitting a new joint model to each cohort. Relative bias (RB) is the signed mean relative estimation error, so negative and positive values indicate systematic under- and over-estimation, respectively. Relative root mean squared error (RRMSE) combines systematic bias and between-cohort variability, while the empirical relative standard error (RSE) is the standard deviation of the estimates divided by the absolute value of their mean and measures stability across cohorts. RB and RRMSE are expressed as percentages; RSE is dimensionless. Values in brackets are 95\% percentile bootstrap confidence intervals obtained by resampling the $M$ cohort-level estimates with 2,000 replicates. Indices $(0)$ to $(3)$ identify the bulbar, fine-motor, gross-motor, and total ALSFRS-R outcomes, respectively. Values of RB close to zero and small RRMSE and RSE indicate accurate and stable recovery.}
 \end{table}
  
 \begin{figure}[htbp] 
@@ -626,7 +626,6 @@ Recovery accuracy is consistent across the four longitudinal outcomes. The ICC v
 
 \begin{table}[hbtp]
 \centering
-\caption{Individual random effect recovery metrics.}
 \begin{tabular}{lcc}
 \hline
 \textbf{Parameter} & \textbf{ICC(3,1)} & \textbf{Pearson's $r$} \\ \hline
@@ -639,12 +638,13 @@ $w_{i,3}$ & $0.987 \pm 0.003$ & $0.988 \pm 0.003$ \\
 $(\boldsymbol{\zeta}^\top \mathbf{s}_i)_0$ & $0.965 \pm 0.027$ & $0.978 \pm 0.013$ \\
 \hline
 \end{tabular}
+\caption{Recovery of the individual effects after fitting and Bayesian personalisation of each of the $M=200$ simulated cohorts, each containing $N=1000$ patients. Within every cohort, the effects estimated after personalisation are compared with the true values used to generate the same patients. The entries report the mean $\pm$ standard deviation of the cohort-specific agreement statistics across the $M$ repetitions. ICC(3,1) is the two-way mixed-effects, single-measure consistency intraclass correlation coefficient and quantifies agreement between true and estimated effects, whereas Pearson's $r$ quantifies their linear association. The temporal effects are the log-acceleration $\xi_i$ and individual reference time $\tau_i$. Because the latent source coordinates are rotationally non-identifiable, spatial recovery is evaluated through the invariant feature-level shifts $w_{i,j}=(\mathbf{A}\mathbf{s}_i)_j$. Indices $j=0,\ldots,3$ denote the bulbar, fine-motor, gross-motor, and total ALSFRS-R outcomes. The quantity $(\boldsymbol{\zeta}^{\top}\mathbf{s}_i)_0$ is the corresponding source-induced survival shift for the single modeled event, death. Values close to one indicate strong recovery.}
 \label{tab:metrics}
 \end{table}
 
 In the scatter plots, one may nevertheless notice a visible concentration of points around estimated values close to zero for some random effects. This pattern could reflect the posterior shrinkage induced by the personalisation step. In finite samples, estimated individual effects are pulled slightly toward the population mean, which is zero for the centred latent effects. This happens especially for individuals with one or a few observations, whose personalisation is less informed by data and more influenced by the prior distribution. This phenomenon does not appear when comparing two personalised quantities, such as the reference model and the $m$-th fitted model, because both undergo the same restriction. Importantly, this visual effect should not be over-interpreted: despite this mild shrinkage, the agreement metrics remain very good, with ICC values above $0.96$ for all individual effects.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/Indiv_multivariate.png}
   \caption{Estimated versus true individual effects, pooled across all patients and the $M=200$ repetitions. The panels show $\xi_i$, $\tau_i$, the four feature-level spatial shifts $w_{i,j}=(\mathbf{A}\mathbf{s}_i)_j$, and the survival shift $(\boldsymbol{\zeta}^{\top}\mathbf{s}_i)_0$. Each point represents one patient and repetition. The red dashed identity line indicates perfect recovery, while the solid gray line is the linear fit; their close overlap indicates strong agreement.}
@@ -653,7 +653,7 @@ In the scatter plots, one may nevertheless notice a visible concentration of poi
 
 The Bland-Altman analysis confirms the absence of substantial systematic error. The mean differences between estimated and true values are close to zero for all effects. The largest mean difference concerns $\tau_i$, at $0.239$ years, which is small relative to the population standard deviation $\sigma_\tau=11.63$ years. For the four feature-level spatial shifts, the biases have absolute values at most $0.0011$, and the limits of agreement remain narrow and centred close to zero. Taken together, these results show that the personalisation procedure reliably recovers the individual temporal, spatial, and survival heterogeneity in the favourable dense observation setting considered here.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/bland-altman_multivariate.png}
   \caption{Bland--Altman comparison of the same individual effects across all patients and repetitions. Each panel plots the estimation error against the mean of the true and estimated values. The solid black line is the bias, and the red dashed lines are the limits of agreement, defined as the bias $\pm 1.96$ standard deviations. Biases close to zero and narrow, centered limits indicate accurate personalisation.}

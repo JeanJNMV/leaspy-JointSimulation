@@ -1066,4 +1066,46 @@ mincitenames=1
   \end{block}
 \end{frame}
 
+\begin{frame}{Appendix: results of the original paper's simulation study}
+\scriptsize
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lllrr}
+\hline
+ & Parameters name &  & RB (\%) & RRMSE (\%) \\
+\hline
+Distribution of random effects
+& Estimated reference time (mean) & $t_0$ & 0.10 & 2.23 \\
+& Estimated reference time (std) & $\sigma_\tau$ & -1.47 & 4.40 \\
+& Individual log-speed factor (std) & $\sigma_\xi$ & 13.21 & 14.85 \\
+\hline
+Longitudinal fixed effects
+& Curve values at $t_0$: $\frac{1}{1+g_k}$ & $g_0$ & -5.35 & 9.28 \\
+& & $g_1$ & -8.08 & 11.27 \\
+& & $g_2$ & -7.74 & 10.87 \\
+& & $g_3$ & -5.93 & 7.71 \\
+\cline{2-5}
+& Speed of the logistic curves $(v_{0,k})$ & $v_{0,0}$ & -7.04 & 10.87 \\
+& & $v_{0,1}$ & -7.43 & 10.64 \\
+& & $v_{0,2}$ & -8.89 & 11.27 \\
+& & $v_{0,3}$ & -9.34 & 11.21 \\
+\cline{2-5}
+& Estimated noises $(\sigma_k)$ & $\sigma_0$ & -3.22 & 4.12 \\
+& & $\sigma_1$ & -1.08 & 2.44 \\
+& & $\sigma_2$ & -0.82 & 2.24 \\
+& & $\sigma_3$ & 0.17 & 2.14 \\
+\hline
+Survival fixed effects
+& Weibull scale $(\nu_l)$ & $\nu_0$ & 18.04 & 23.19 \\
+& & $\nu_1$ & -0.09 & 9.97 \\
+\cline{2-5}
+& Weibull shape $(\rho_l)$ & $\rho_0$ & -8.38 & 14.15 \\
+& & $\rho_1$ & 10.98 & 19.79 \\
+\hline
+\end{tabular}%
+}
+\slidesource{Results are extracted from: \textcite{ortholand2025multijoint}.}
+\end{frame}
+  
+
 \end{document}

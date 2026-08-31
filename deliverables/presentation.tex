@@ -9,17 +9,17 @@
 \usepackage{bbm}
 \usepackage{amsmath}
 \usepackage{hyperref}
-\usepackage{animate}
+\usepackage{animate} 
 \usepackage[ruled,vlined,noend]{algorithm2e} 
 \usepackage{caption}
 \usepackage{subcaption}
-\usepackage{graphicx}
+\usepackage{graphicx} 
 \usepackage{comment}
 \usepackage{booktabs}
 \usepackage{array} 
 \usepackage{appendixnumberbeamer}
 \usepackage{tikz} 
-\usetikzlibrary{arrows.meta,positioning,calc,decorations.pathreplacing}
+\usetikzlibrary{arrows.meta,positioning,calc,decorations.pathreplacing} 
 \captionsetup[figure]{font=tiny}
 
 % --- Template Definitions ---
@@ -502,7 +502,7 @@ mincitenames=1
 
   \vspace{0.5em}
   \centering\scriptsize
-  The other adaptations are mainly developer/API-oriented considerations and are detailed in the appendix.
+  \softbox{softgreen}{The other adaptations are mainly developer/API-oriented considerations and are detailed in the appendix.}
 \end{frame}
 
 % ============================================================================
@@ -847,6 +847,70 @@ mincitenames=1
   \vspace{0.6em}
   \centering
   $y_{i,r,j}=\gamma_{i,j}(t_{i,r,j})+\epsilon_{i,r,j}$
+\end{frame}
+
+\begin{frame}{Appendix: why the metric produces a logistic trajectory}
+  \scriptsize
+  \setlength{\abovedisplayskip}{0.35em}
+  \setlength{\belowdisplayskip}{0.35em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\textwidth}
+      \softbox{softgrey}{
+        \textbf{1. Flatten the Riemannian geometry}\par
+        For one score, let $M=(0,1)$ with
+        \[
+          \mathrm ds^2=G(p)\,\mathrm dp^2,
+          \qquad G(p)=\frac{1}{p^2(1-p)^2}.
+        \]
+        Define the logit coordinate
+        \[
+          \phi(p)=\log\!\frac{p}{1-p},
+          \qquad \phi'(p)=\frac{1}{p(1-p)}.
+        \]
+        Since $\phi'(p)^2=G(p)$, we obtain
+        $\mathrm ds^2=\mathrm d\phi^2$: the geometry is Euclidean
+        in the $\phi$ coordinate.
+      }
+
+      \vspace{0.55em}
+      \textbf{2. Geodesics become straight lines}\par
+      Therefore a geodesic $\gamma$ satisfies
+      \[
+        \phi(\gamma(t))=\phi(p_0)+c(t-t_0).
+      \]
+    \end{column}
+
+    \begin{column}{0.48\textwidth}
+      \textbf{3. Map back to $(0,1)$}\par
+      Applying the inverse logit gives
+      \[
+        \gamma(t)=
+        \left[1+\frac{1-p_0}{p_0}
+        e^{-c(t-t_0)}\right]^{-1},
+      \]
+      which is a bounded logistic trajectory.
+
+      \vspace{0.55em}
+      \softbox{softgrey}{
+        \textbf{4. Recover Leaspy's parametrisation}\par
+        Set $p_0=1/(1+g)$ and require
+        $\dot\gamma(t_0)=v_0$. Because
+        $\dot\gamma=c\gamma(1-\gamma)$,
+        \[
+          c=\frac{v_0}{p_0(1-p_0)}
+           =\frac{(1+g)^2}{g}v_0.
+        \]
+      }
+    \end{column}
+  \end{columns}
+
+  \vspace{0.35em}
+  \[
+    \boxed{\gamma(t)=\left[1+g\exp\!\left(
+      -\frac{(1+g)^2}{g}v_0(t-t_0)\right)\right]^{-1}}
+  \]
+  \vspace{-0.2em}
+  \takeaway{A straight geodesic in logit coordinates becomes a logistic curve in score space.}
 \end{frame}
 
 \begin{frame}{Appendix: full longitudinal model}

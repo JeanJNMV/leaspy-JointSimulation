@@ -94,7 +94,7 @@ mincitenames=1
     \fi
     \ifnum#1>2
       \node[box,fill=green!10] (fit) at (8,0) {Fresh fitted model\\$\hat\theta^{(m)}$};
-      \draw[arr] (sim)--(fit);
+      \draw[{Stealth[length=6pt]}-{Stealth[length=6pt]},thick] (sim)--(fit);
       \node[font=\scriptsize] at ($(sim.east)!0.5!(fit.west)+(0,0.75)$) {fit};
       \draw[decorate,decoration={brace,amplitude=6pt,raise=15pt}]
         (sim.north west)--(fit.north east)
@@ -165,7 +165,7 @@ mincitenames=1
 
   \vfill
   \softbox{softgrey}{
-        We write $y_i(t)$ for the clinical scores observed for patient $i$ at age $t$.\\
+        %We write $y_i(t)$ for the clinical scores observed for patient $i$ at age $t$.\\
         \textbf{Nonlinear mixed-effects models} combine a population trajectory
         with patient-specific deviations.
       }

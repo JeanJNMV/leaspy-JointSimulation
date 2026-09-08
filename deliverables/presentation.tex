@@ -464,12 +464,12 @@ mincitenames=1
   \takeaway{Output: longitudinal observations, an event or censoring time, and its indicator.}
 \end{frame}
 
-\begin{frame}{Integrating joint simulation inside Leaspy}  
+\begin{frame}{Integrating joint simulation inside Leaspy} 
   \centering
   \resizebox{\linewidth}{!}{%
   \begin{tikzpicture}[
-      node distance=0.7cm,
-      box/.style={draw,rounded corners=3pt,minimum width=2.35cm,minimum height=1.0cm,align=center,font=\small},
+      node distance=0.6cm,
+      box/.style={draw,rounded corners=3pt,minimum width=2.35cm,minimum height=0.9cm,align=center,font=\small},
       link/.style={thick}
     ]
     \node[box,fill=CSgrey!12] (visits) {random schedule\\or DataFrame};
@@ -483,26 +483,47 @@ mincitenames=1
     \draw[link] (sample)--(output);
   \end{tikzpicture}}
 
-  \vspace{0.7em}
+  \vspace{0.45em}
+  \scriptsize
   \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.48\textwidth}
+    \begin{column}{0.31\textwidth}
       \softbox{softgrey}{
-        \textbf{1. Standard workflow}\\[0.25em]
-        Extend \texttt{estimate} so joint models can use the same
-        \texttt{simulate} workflow as other Leaspy models.
+        \textbf{1. Standard API}\\[0.2em]
+        Extend \texttt{estimate} with longitudinal and event predictions, so joint models use the usual \texttt{simulate} workflow.
       }
     \end{column}
-    \begin{column}{0.48\textwidth}
+    \begin{column}{0.31\textwidth}
       \softbox{softred}{
-        \textbf{2. Competing events}\\[0.25em]
-        Generalise event prediction and sampling from one event to several competing event types.
+        \textbf{2. Visit design}\\[0.2em]
+        Accept a random visit process or an explicit DataFrame; infer missing random-mode study parameters from an input dataset.
+      }
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \softbox{softgreen}{
+        \textbf{3. Bounded noise}\\[0.2em]
+        Draw Beta observations; clamp infeasible variance to $0.99\,\mu(1-\mu)$ and warn about the affected observation.
       }
     \end{column}
   \end{columns}
 
-  \vspace{0.5em}
-  \centering\scriptsize
-  \softbox{softgreen}{The other adaptations are mainly developer/API-oriented considerations and are detailed in the appendix.}
+  \vspace{0.35em}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\textwidth}
+      \softbox{designinput}{
+        \textbf{4. Single and competing events}\\[0.2em]
+        Evaluate conditional survival/CIFs on the visit grid; sample the event by inversion and its cause from incremental cause-specific CIFs.
+      }
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \softbox{fitinput}{
+        \textbf{5. Rounding-safe censoring}\\[0.2em]
+        Round visit times, right-censor events beyond follow-up, then remove any rounded visit that falls after the event time.
+      }
+    \end{column}
+  \end{columns}
+
+  \vspace{0.4em}
+  \takeaway{One Leaspy workflow now produces bounded trajectories, event types, and coherent censoring.}
 \end{frame}
 
 % ============================================================================
@@ -980,23 +1001,6 @@ mincitenames=1
   \end{enumerate}
 
   \takeaway{This ensures internal API reuse, but discretises event times onto the visit grid.}
-\end{frame}
-
-\begin{frame}{Appendix: additional Leaspy adaptations}
-  \begin{block}{Visit schedules and study parameters}
-    The simulator accepts either a random visit process or a user-provided schedule.
-    Missing random-mode study parameters can be estimated from an input dataset.
-  \end{block}
-
-  \begin{block}{Bounded observation noise}
-    Longitudinal observations use Beta noise. Near score boundaries, an infeasible variance
-    is clamped to $0.99\,\mu(1-\mu)$ and a warning identifies the affected observation.
-  \end{block}
-
-  \begin{block}{Competing causes and rounding}
-    Event types are sampled from incremental cause-specific cumulative incidences.
-    After visit-time rounding, a final censoring pass removes any visit moved beyond the event time.
-  \end{block}
 \end{frame}
 
 \begin{frame}{Appendix: detailed population recovery (1/2)}

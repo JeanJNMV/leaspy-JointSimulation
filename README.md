@@ -39,7 +39,7 @@ In addition, a set of notebooks is provided in this repository to test the algor
 
 A `cluster` branch is also available in the repository, containing code for parallelized simulation and fitting across multiple processes on a HPC cluster, as used in the paper's pipeline notebook.
 
-## Reference
+## Main References
 
 - Juliette Ortholand, Nicolas Gensollen, Stanley Durrleman, and Sophie Tezenas Du Montcel. Joint model with latent disease age: Overcoming the need for reference time. Statistical Methods in Medical Research, 35(2):225–239, 2026.
 

@@ -85,12 +85,13 @@ mincitenames=1
     ]
     % A fixed bounding box keeps every block in exactly the same position
     % throughout the progressive explanation.
-    \path[use as bounding box] (-1.65,-3.25) rectangle (9.65,2.25);
+    \path[use as bounding box] (-2.45,-3.25) rectangle (9.65,2.25);
     \node[box,fill=blue!8] (ref) at (0,0) {Reference model\\population truth $\theta^*$};
     \ifnum#1>1
       \node[box,fill=orange!12] (sim) at (4,0) {Synthetic cohort $m$\\$y$, event time, indicator};
-      \draw[arr] (ref)--(sim);
-      \node[font=\scriptsize] at ($(ref.east)!0.5!(sim.west)+(0,0.75)$) {simulate};
+      \node[box,fill=blue!8] (true) at (0,-2.1) {True sampled effects\\$\tau_i,\xi_i,\ldots$};
+      \draw[arr] (ref)--node[left,font=\footnotesize]{simulate (step 1)}(true);
+      \draw[arr] (true)--node[midway,below right,font=\footnotesize]{simulate}(sim);
     \fi
     \ifnum#1>2
       \node[box,fill=green!10] (fit) at (8,0) {Fresh fitted model\\$\hat\theta^{(m)}$};
@@ -101,15 +102,13 @@ mincitenames=1
         node[midway,above=13pt,font=\footnotesize\itshape,fill=white,inner sep=1.5pt]{repeat $M$ times};
     \fi
     \ifnum#1>3
-      \node[box,fill=blue!8] (true) at (4,-2.1) {True sampled effects\\$\tau_i,\xi_i,\ldots$};
       \node[box,fill=CSred!10] (perso) at (8,-2.1) {Personalised effects\\$\hat\tau_i,\hat\xi_i,\ldots$};
-      \draw[arr] (sim)--node[left,font=\footnotesize]{retain truth}(true);
       \draw[arr] (fit)--node[right,font=\footnotesize]{personalise}(perso);
     \fi
     \ifnum#1>4
       \draw[darr] (ref.north) .. controls +(0,1.75) and +(0,1.75) ..
         node[pos=0.5,above,font=\footnotesize,color=black]{RB, RRMSE} (fit.north);
-      \draw[darr] (true)--node[midway,below=17pt,font=\footnotesize,color=black]{ICC, Pearson's $r$}(perso);
+      \draw[darr] (true)--node[midway,below=17pt,font=\footnotesize,color=black]{ICC(3,1)}(perso);
     \fi
   \end{tikzpicture}}}
 \setbeamercolor{softgrey}{bg=CSgrey!12,fg=black}
@@ -181,20 +180,22 @@ mincitenames=1
         \small Real cohorts never reveal a patient's exact progression stage or patient-specific parameters.
       }
     \end{column}
+    \pause
     \begin{column}{0.31\textwidth}
       \softbox{softred}{
         \centering\textbf{Controlled tests}\\[0.4em]
         \small Check whether known parameters are recovered when visits are sparse or patients leave the study early.
       }
     \end{column}
+    \pause
     \begin{column}{0.31\textwidth}
       \softbox{softgreen}{
         \centering\textbf{Shareable cohorts}\\[0.4em]
         \small Support reproducibility and benchmarking without distributing patient records.
       }
     \end{column}
+  \pause
   \end{columns}
-
   \vspace{1em}
   \softbox{softred}{
     \textbf{Internship gap.} The joint-model paper used a separate research script;
@@ -247,7 +248,7 @@ mincitenames=1
   \end{columns}
   
   \centering
-  \includegraphics[width=\textwidth]{figures/random_effects.png}
+  \includegraphics[width=\textwidth]{figures/short_random_effects.png}
 
   \slidesource{Figure adapted from \textcite{koval2021ad}.}
 
@@ -256,7 +257,7 @@ mincitenames=1
 \begin{frame}{Disease age separates disease stage from chronological age}
 
   \centering
-  \includegraphics[width=\textwidth]{figures/random_effects.png}
+  \includegraphics[width=\textwidth]{figures/short_random_effects.png} 
   \vspace*{-1em}
   {\LARGE
     \[
@@ -321,10 +322,9 @@ mincitenames=1
 
   \vspace{0.7em}
   \begin{itemize}
-    \item \textbf{Competing events:} several mutually exclusive outcomes can end follow-up;
-      observing one prevents the others from being observed for that patient.
-    \item \textbf{Informative dropout:} follow-up ends for a reason related to the patient's
-      unobserved health state, so the missing data are not independent of disease progression.
+    \item \textbf{Competing events:} several mutually exclusive outcomes can end follow-up.
+    \item \textbf{Informative and non-informative dropout:} follow-up can end for a reason related to the patient's
+      unobserved health state or for a reason unrelated to the disease.
   \end{itemize}
   \slidesource{Joint latent-disease-age models: \textcite{ortholand2025multijoint,ortholand2026joint}.}
 \end{frame}
@@ -350,6 +350,7 @@ mincitenames=1
         \item source mixing: $\fitparam{\mathbf A,\boldsymbol\zeta}$
       \end{itemize}
     \end{column}
+    \pause
     \begin{column}{0.48\textwidth}
       \softbox{designinput}{
         \centering\textbf{Specified by the user}
@@ -364,7 +365,7 @@ mincitenames=1
       \end{itemize}
     \end{column}
   \end{columns}
-
+  \pause
   \vfill
   \takeaway{The model determines what disease progression looks like; the user determines what the study looks like.}
 \end{frame}
@@ -466,25 +467,6 @@ mincitenames=1
 \end{frame}
 
 \begin{frame}{Integrating joint simulation inside Leaspy} 
-  \centering
-  \resizebox{\linewidth}{!}{%
-  \begin{tikzpicture}[
-      node distance=0.6cm,
-      box/.style={draw,rounded corners=3pt,minimum width=2.35cm,minimum height=0.9cm,align=center,font=\small},
-      link/.style={thick}
-    ]
-    \node[box,fill=CSgrey!12] (visits) {random schedule\\or DataFrame};
-    \node[box,fill=blue!8,right=of visits] (estimate) {extended\\\texttt{estimate}};
-    \node[box,fill=orange!12,right=of estimate] (cond) {trajectories +\\conditional $S$/CIF};
-    \node[box,fill=CSred!10,right=of cond] (sample) {inverse sampling\\on visit grid};
-    \node[box,fill=green!10,right=of sample] (output) {rounding, censoring\\and output};
-    \draw[link] (visits)--(estimate);
-    \draw[link] (estimate)--(cond);
-    \draw[link] (cond)--(sample);
-    \draw[link] (sample)--(output);
-  \end{tikzpicture}}
-
-  \vspace{0.45em}
   \scriptsize
   \begin{columns}[T,onlytextwidth]
     \begin{column}{0.31\textwidth}
@@ -493,12 +475,14 @@ mincitenames=1
         Extend \texttt{estimate} with longitudinal and event predictions, so joint models use the usual \texttt{simulate} workflow.
       }
     \end{column}
+    \pause
     \begin{column}{0.31\textwidth}
       \softbox{softred}{
         \textbf{2. Visit design}\\[0.2em]
         Accept a random visit process or an explicit DataFrame; infer missing random-mode study parameters from an input dataset.
       }
     \end{column}
+    \pause 
     \begin{column}{0.31\textwidth}
       \softbox{softgreen}{
         \textbf{3. Bounded noise}\\[0.2em]
@@ -509,12 +493,14 @@ mincitenames=1
 
   \vspace{0.35em}
   \begin{columns}[T,onlytextwidth]
+    \pause
     \begin{column}{0.48\textwidth}
       \softbox{designinput}{
         \textbf{4. Single and competing events}\\[0.2em]
         Evaluate conditional survival/CIFs on the visit grid; sample the event by inversion and its cause from incremental cause-specific CIFs.
       }
     \end{column}
+    \pause
     \begin{column}{0.48\textwidth}
       \softbox{fitinput}{
         \textbf{5. Rounding-safe censoring}\\[0.2em]
@@ -592,10 +578,10 @@ mincitenames=1
     \begin{column}{0.31\textwidth}
       \softbox{softred}{
         \centering\textbf{Visit process}\\[0.5em]
-        first offset $-2\pm1$ y\\
-        follow-up $6\pm2$ y\\
-        interval $0.083\pm0.042$ y\\
-        minimum $0.05$ y
+        first offset $-2\pm1$y\\
+        follow-up $6\pm2$y\\
+        interval $0.083\pm0.042$y\\
+        minimum $0.05$y 
       }
     \end{column}
     \begin{column}{0.31\textwidth}
@@ -628,7 +614,7 @@ mincitenames=1
   \validationdiagram{5}
 \end{frame}
 
-\begin{frame}{Four recovery metrics, two inference levels}
+\begin{frame}{Three recovery metrics, two inference levels}
   \begin{columns}[T,onlytextwidth]
     \begin{column}{0.49\textwidth}
       \softbox{softgrey}{
@@ -643,26 +629,38 @@ mincitenames=1
       \[
         \mathrm{RB}=\frac{1}{M}\sum_{m=1}^{M}e_m
       \]
-      signed systematic error; best value: $0\%$.
+      signed systematic error. \\ Best value: $0\%$.
 
       \[
         \mathrm{RRMSE}=\sqrt{\frac{1}{M}\sum_{m=1}^{M}e_m^2}
       \]
-      total error from bias and dispersion; best value: $0\%$.
+      total error from bias and dispersion. \\ Best value: $0\%$.
     \end{column}
+    \pause
     \begin{column}{0.47\textwidth}
       \softbox{softred}{
         \centering\textbf{Individual random effects}
       }
-      \vspace{0.7em}
-      \begin{block}{ICC(3,1)}
-        Consistency between true and personalised values while accounting for disagreement beyond rank ordering.
-      \end{block}
-      \begin{block}{Pearson's $r$}
-        Strength of linear association; invariant to location and scale changes.
-      \end{block}
-      \centering
-      Best value for both: $1$.
+      \vspace{0.4em}
+      \footnotesize
+      \textbf{Role in the pipeline.} Compute one ICC per random effect and cohort,
+      comparing true sampled with personalised values.
+
+      \vspace{0.5em}
+      \softbox{softgrey}{
+        \textbf{ICC(3,1): two-way mixed, consistency, single measure}\par\vspace{0.2em}
+        Patients are the targets. True and personalised values are the two fixed
+        measurement methods ($k=2$).\par\vspace{0.4em}
+        {\centering
+          $\displaystyle \mathrm{ICC}(3,1)=
+          \frac{MS_B-MS_E}{MS_B+(k-1)MS_E}$\par
+        }
+        \vspace{0.4em}
+        $MS_B$: between-patient variation.\\
+        $MS_E$: residual true--estimate
+        disagreement. \\
+        Best value: $1$ (perfect agreement).
+      }
     \end{column}
   \end{columns}
 \end{frame}
@@ -681,42 +679,62 @@ mincitenames=1
   \sectiondividercontent{5}{Results of the experiments}
 \end{frame}
 
-\begin{frame}{Fixed effects / population parameters: recovery}
+\begin{frame}{Fixed effects / population parameters: recovery (1/2)}
   \centering
   \small
-  \setlength{\tabcolsep}{4.5pt}
-  \renewcommand{\arraystretch}{1.28}
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.18}
   \resizebox{\linewidth}{!}{%
-  \begin{tabular}{lclcc}
+  \begin{tabular}{llcc}
     \toprule
-    Component & Parameters & Interpretation & RB (\%) & RRMSE (\%)\\
+    Parameter & Interpretation & RB (\%) [95\% CI] & RRMSE (\%) [95\% CI]\\
     \midrule
-    Temporal & $t_0,\sigma_\tau,\sigma_\xi$ & reference and variability
-      & $0.03$ to $0.44$ & $0.83$ to $2.32$\\
-    Survival & $\rho,\nu$ & Weibull shape and scale
-      & $0.10$ to $2.33$ & $5.01$ to $5.43$\\
-    Noise & $\sigma^{(0:3)}$ & observation noise
-      & $-4.60$ to $-1.26$ & $1.47$ to $4.73$\\
-    Position & $g^{(0:3)}$ & logistic position
-      & $-8.80$ to $-5.92$ & $8.09$ to $12.61$\\
-    Velocity & $v_0^{(0:3)}$ & logistic velocity
-      & $1.12$ to $6.46$ & $4.52$ to $10.53$\\
+    $t_0$ & Population reference time & $0.44\ [0.35,0.53]$ & $0.83\ [0.76,0.90]$\\
+    $\sigma_\tau$ & Time-shift SD & $0.08\ [-0.24,0.38]$ & $2.32\ [2.10,2.54]$\\
+    $\sigma_\xi$ & Log-acceleration SD & $0.03\ [-0.27,0.37]$ & $2.32\ [2.11,2.56]$\\
+    \addlinespace[0.15em]
+    $\rho$ & Weibull shape & $0.10\ [-0.61,0.81]$ & $5.01\ [4.50,5.51]$\\
+    $\nu$ & Weibull scale & $2.33\ [1.64,3.00]$ & $5.43\ [4.97,5.91]$\\
+    \addlinespace[0.15em]
+    $\sigma^{(0)}$ & Bulbar observation-noise SD & $-4.60\ [-4.76,-4.45]$ & $4.73\ [4.58,4.89]$\\
+    $\sigma^{(1)}$ & Fine-motor observation-noise SD & $-4.16\ [-4.28,-4.04]$ & $4.25\ [4.14,4.38]$\\
+    $\sigma^{(2)}$ & Gross-motor observation-noise SD & $-3.08\ [-3.17,-2.97]$ & $3.17\ [3.07,3.27]$\\
+    $\sigma^{(3)}$ & Total-score observation-noise SD & $-1.26\ [-1.37,-1.15]$ & $1.47\ [1.37,1.56]$\\
     \bottomrule
   \end{tabular}}
 
-  \vspace{0.9em}
-  \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.48\textwidth}
-      \softbox{softgreen}{
-        \textbf{Best recovered:} temporal population parameters, supported by many repeated observations per patient.
-      }
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \softbox{softred}{
-        \textbf{Hardest:} trajectory positions $g$ and bulbar velocity $v_0^{(0)}$, which can compensate for each other.
-      }
-    \end{column}
-  \end{columns}
+  \vspace{1em}
+  \softbox{softgreen}{
+    \textbf{Best recovered:} temporal population parameters, supported by many repeated observations per patient.
+  }
+\end{frame}
+
+\begin{frame}{Fixed effects / population parameters: recovery (2/2)}
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.2}
+  \resizebox{\linewidth}{!}{%
+  \begin{tabular}{llcc}
+    \toprule
+    Parameter & Interpretation & RB (\%) [95\% CI] & RRMSE (\%) [95\% CI]\\
+    \midrule
+    $g^{(0)}$ & Bulbar trajectory position & $-8.27\ [-9.41,-7.23]$ & $11.41\ [10.60,12.28]$\\
+    $g^{(1)}$ & Fine-motor trajectory position & $-8.80\ [-10.03,-7.52]$ & $12.61\ [11.55,13.66]$\\
+    $g^{(2)}$ & Gross-motor trajectory position & $-7.60\ [-8.71,-6.52]$ & $11.16\ [10.26,12.06]$\\
+    $g^{(3)}$ & Total-score trajectory position & $-5.92\ [-6.68,-5.17]$ & $8.09\ [7.46,8.76]$\\
+    \addlinespace[0.15em] 
+    $v_0^{(0)}$ & Bulbar trajectory velocity & $6.46\ [5.32,7.65]$ & $10.53\ [9.56,11.53]$\\
+    $v_0^{(1)}$ & Fine-motor trajectory velocity & $2.23\ [1.54,2.93]$ & $5.57\ [5.05,6.12]$\\
+    $v_0^{(2)}$ & Gross-motor trajectory velocity & $1.12\ [0.52,1.74]$ & $4.52\ [4.12,4.92]$\\
+    $v_0^{(3)}$ & Total-score trajectory velocity & $2.05\ [1.37,2.73]$ & $5.25\ [4.75,5.78]$\\
+    \bottomrule
+  \end{tabular}}
+
+  \vspace{1em}
+  \softbox{softred}{
+    \textbf{Hardest to recover:} trajectory positions $g$ and bulbar velocity $v_0^{(0)}$, which can compensate for each other.
+  }
 \end{frame}
 
 \begin{frame}{Individual random effects: recovery (1/2)}
@@ -725,18 +743,18 @@ mincitenames=1
       \centering
       \small
       \renewcommand{\arraystretch}{1.23}
-      \begin{tabular}{lcc}
+      \begin{tabular}{lc}
         \toprule
-        Effect & ICC(3,1) & Pearson's $r$\\
+        Effect & ICC(3,1)\\
         \midrule
-        $\xi_i$ & $0.988\pm0.004$ & $0.989\pm0.004$\\
-        $\tau_i$ & $0.995\pm0.002$ & $0.995\pm0.002$\\
-        $w_{i,0}$ & $0.987\pm0.006$ & $0.992\pm0.003$\\
-        $w_{i,1}$ & $0.989\pm0.003$ & $0.990\pm0.003$\\
-        $w_{i,2}$ & $0.990\pm0.003$ & $0.991\pm0.003$\\
-        $w_{i,3}$ & $0.987\pm0.003$ & $0.988\pm0.003$\\
+        $\xi_i$ & $0.988\pm0.004$\\
+        $\tau_i$ & $0.995\pm0.002$\\
+        $w_{i,0}$ & $0.987\pm0.006$\\
+        $w_{i,1}$ & $0.989\pm0.003$\\
+        $w_{i,2}$ & $0.990\pm0.003$\\
+        $w_{i,3}$ & $0.987\pm0.003$\\
         $(\boldsymbol\zeta^\top\mathbf s_i)_0$
-          & $0.965\pm0.027$ & $0.978\pm0.013$\\
+          & $0.965\pm0.027$\\
         \bottomrule
       \end{tabular}
 
@@ -829,6 +847,37 @@ mincitenames=1
 
   \vfill
   \takeaway{Synthetic does not mean risk-free, and reproducible does not mean cost-free.}
+\end{frame}
+
+\begin{frame}{Acknowledgements}
+  \small
+  \softbox{softred}{
+    \textbf{Sophie Tezenas du Montcel}\par
+    For welcoming me into her research group and for her scientific guidance throughout the internship. 
+    \par
+    \textbf{Maylis Tran and Sofia Kaisaridi}\par
+        For their availability, constructive feedback, and support on the scientific and software aspects of the work.
+  }
+
+  \vspace{0.55em} 
+  \softbox{softgreen}{
+  \textbf{The ARAMIS team}\par
+  For the stimulating interdisciplinary environment and the enriching exchanges with researchers, engineers, and fellow interns.}
+  \vspace{0.55em}
+  \softbox{designinput}{
+    \textbf{Arthur Tenenhaus (SDI) and Vincent Mousseau (FMR)} for their academic follow-up;
+    the \textbf{Paris Brain Institute, INRIA, and Leaspy contributors} for the institutional,
+    computational, and open-source foundations of this work.
+  }
+
+  \vfill
+  \centering
+  \includegraphics[height=0.52cm,keepaspectratio]{logos/logoSorbonne.png}\hspace{0.25cm}
+  \includegraphics[height=0.52cm,keepaspectratio]{logos/logoICM.png}\hspace{0.25cm}
+  \includegraphics[height=0.52cm,keepaspectratio]{logos/logoCNRS.png}\hspace{0.25cm}
+  \includegraphics[height=0.52cm,keepaspectratio]{logos/logoINRIA.png}\hspace{0.25cm}
+  \includegraphics[height=0.52cm,keepaspectratio]{logos/logoINSERM.png}\hspace{0.25cm}
+  \includegraphics[height=0.52cm,keepaspectratio]{logos/logoAPHP.png}
 \end{frame}
 
 \begin{frame}[allowframebreaks]{References}
@@ -1070,17 +1119,17 @@ mincitenames=1
   \centering
   \small
   \renewcommand{\arraystretch}{1.2}
-  \begin{tabular}{lcc}
+  \begin{tabular}{lc}
     \toprule
-    Effect & ICC(3,1) & Pearson's $r$\\
+    Effect & ICC(3,1)\\
     \midrule
-    $\xi_i$ & $0.988\pm0.004$ & $0.989\pm0.004$\\
-    $\tau_i$ & $0.995\pm0.002$ & $0.995\pm0.002$\\
-    $w_{i,0}$ & $0.987\pm0.006$ & $0.992\pm0.003$\\
-    $w_{i,1}$ & $0.989\pm0.003$ & $0.990\pm0.003$\\
-    $w_{i,2}$ & $0.990\pm0.003$ & $0.991\pm0.003$\\
-    $w_{i,3}$ & $0.987\pm0.003$ & $0.988\pm0.003$\\
-    $(\boldsymbol\zeta^\top\mathbf s_i)_0$ & $0.965\pm0.027$ & $0.978\pm0.013$\\
+    $\xi_i$ & $0.988\pm0.004$\\
+    $\tau_i$ & $0.995\pm0.002$\\
+    $w_{i,0}$ & $0.987\pm0.006$\\
+    $w_{i,1}$ & $0.989\pm0.003$\\
+    $w_{i,2}$ & $0.990\pm0.003$\\
+    $w_{i,3}$ & $0.987\pm0.003$\\
+    $(\boldsymbol\zeta^\top\mathbf s_i)_0$ & $0.965\pm0.027$\\
     \bottomrule
   \end{tabular}
 

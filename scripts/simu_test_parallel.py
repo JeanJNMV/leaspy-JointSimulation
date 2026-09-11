@@ -17,6 +17,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 NB_EVENTS = 1
 MODELS_DIR = os.path.join(".", "models")
 SAVE_DIR   = os.path.join("/network/iss/aramis/users/jv.martini", "output")
+N_VISITS_COLUMN = "n_visits"
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
@@ -92,6 +93,37 @@ def safe_pickle_load(path):
         return None
 
 
+def _add_visit_counts(ip_df, visit_counts):
+    """Return individual parameters with the observed visit count attached."""
+    if ip_df is None:
+        return None
+
+    counts = visit_counts.reindex(ip_df.index)
+    if counts.isna().any():
+        missing_ids = counts.index[counts.isna()].tolist()
+        raise ValueError(f"Missing visit counts for individual(s): {missing_ids}")
+
+    result = ip_df.copy()
+    result[N_VISITS_COLUMN] = counts.astype(int)
+    return result
+
+
+def _has_visit_counts(result):
+    """Whether a per-task result uses the current individual-output schema."""
+    if not isinstance(result, dict):
+        return False
+
+    true_ip = result.get("true_ip")
+    if not isinstance(true_ip, pd.DataFrame) or N_VISITS_COLUMN not in true_ip:
+        return False
+
+    return all(
+        ip_df is None
+        or (isinstance(ip_df, pd.DataFrame) and N_VISITS_COLUMN in ip_df)
+        for ip_df in (result.get("ref_ip"), result.get("est_ip"))
+    )
+
+
 # ── Single simulation ─────────────────────────────────────────────────────────
 def run_single(m, model_name, N, M, N_ITER, N_PERSO):
     ref_model_path = _model_path(model_name)
@@ -99,10 +131,14 @@ def run_single(m, model_name, N, M, N_ITER, N_PERSO):
 
     # Skip only if the existing file is actually readable
     if os.path.exists(out_path):
-        if safe_pickle_load(out_path) is not None:
+        existing_result = safe_pickle_load(out_path)
+        if existing_result is not None and _has_visit_counts(existing_result):
             print(f"[m={m}] Already done — skipping ({out_path})")
             return
-        print(f"[m={m}] Existing file corrupted — re-running")
+        if existing_result is None:
+            print(f"[m={m}] Existing file corrupted — re-running")
+        else:
+            print(f"[m={m}] Existing file has no visit counts — re-running")
 
     # Load reference model (per-task, so no cross-process state sharing)
     ref_model = JointModel.load(ref_model_path)
@@ -141,12 +177,18 @@ def run_single(m, model_name, N, M, N_ITER, N_PERSO):
     _df_sim = sim_data.to_dataframe()
     _id_map = {old: old.zfill(_n_digits) for old in _df_sim["ID"].unique()}
     _df_sim["ID"] = _df_sim["ID"].map(_id_map)
+    visit_counts = (
+        _df_sim.groupby("ID", sort=False)
+        .size()
+        .rename(N_VISITS_COLUMN)
+    )
     sim_data = Data.from_dataframe(_df_sim, "joint",
                                    factory_kws={"nb_events": NB_EVENTS})
 
     ip_sim     = sim_result.individual_parameters
     true_ip_df = ip_sim if isinstance(ip_sim, pd.DataFrame) else pd.DataFrame(ip_sim)
     true_ip_df.index = true_ip_df.index.map(lambda x: x.zfill(_n_digits))
+    true_ip_df = _add_visit_counts(true_ip_df, visit_counts)
 
     # Oracle: personalise with the TRUE reference model (known θ).
     ref_ip_df = None
@@ -154,7 +196,7 @@ def run_single(m, model_name, N, M, N_ITER, N_PERSO):
         ref_ip    = ref_model.personalize(sim_data, "mean_posterior",
                                           seed=3000 + m, n_iter=N_PERSO,
                                           progress_bar=False)
-        ref_ip_df = ref_ip.to_dataframe()
+        ref_ip_df = _add_visit_counts(ref_ip.to_dataframe(), visit_counts)
     except Exception as exc:
         print(f"[m={m}] Oracle personalisation failed: {exc}")
 
@@ -184,7 +226,7 @@ def run_single(m, model_name, N, M, N_ITER, N_PERSO):
         est_ip    = new_model.personalize(sim_data, "mean_posterior",
                                           seed=2000 + m, n_iter=N_PERSO,
                                           progress_bar=False)
-        est_ip_df = est_ip.to_dataframe()
+        est_ip_df = _add_visit_counts(est_ip.to_dataframe(), visit_counts)
     except Exception as exc:
         print(f"[m={m}] Personalisation failed: {exc}")
 

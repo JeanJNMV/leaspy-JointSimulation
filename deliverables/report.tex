@@ -106,7 +106,7 @@ Indeed, simulation plays a central role in the development of complex statistica
 
 The main objective of this internship was therefore to contribute to the development of simulation and statistical evaluation tools for Leaspy, with a particular focus on the joint model. Concretely, the work consisted in extending the simulation pipeline to settings involving longitudinal data jointly modeled with time-to-event outcomes, integrating these developments into the existing software architecture, and validating them through dedicated numerical experiments. Beyond the implementation effort itself, the internship also aimed at assessing the self-consistency of the model and estimation procedures through simulation-based validation studies.
 
-More broadly, this work lies at the intersection of statistical modeling, scientific computing and software engineering. Because Leaspy is an open-source research library intended to be used both by methodologists and by applied researchers, contributing to it requires not only implementing new methodological features, but also ensuring code reliability, reproducibility, usability and documentation quality. In that respect, the internship included several additional contributions that are not detailed in the core chapters of this report: reviewing pull requests submitted to the library, writing and improving unit and functional tests, improving parts of the documentation, and preparing and participating in a workshop on longitudinal data where I animated a hands-on session on the simulation tools in Leaspy. Being part of the development team of an open-source library and participating in its maintenance and dissemination was a important part of the internship experience, and provided valuable insights into the challenges of scientific software development in a collaborative environment.
+More broadly, this work lies at the intersection of statistical modeling, scientific computing and software engineering. Because Leaspy is an open-source research library intended to be used both by methodologists and by applied researchers, contributing to it requires not only implementing new methodological features, but also ensuring code reliability, reproducibility, usability and documentation quality. In that respect, the internship included several additional contributions that are not detailed in the core chapters of this report: reviewing pull requests submitted to the library, writing and improving unit and functional tests, improving parts of the documentation, and preparing and participating in a workshop on longitudinal data where I animated a hands-on session on the simulation tools in Leaspy. Being part of the development team of an open-source library and participating in its maintenance and dissemination was an important part of the internship experience, and provided valuable insights into the challenges of scientific software development in a collaborative environment.
 
 This report focuses primarily on the methodological and technical contributions related to simulation and evaluation for the joint model. It first presents the scientific and software context of the Leaspy library, as well as the motivations for simulation studies in this framework. It then introduces the joint model in more detail, describes the simulation algorithm implemented during the internship and the adaptations made within Leaspy, and finally reports a validation study designed to assess parameter recovery and the consistency of the overall pipeline.
 
@@ -144,7 +144,7 @@ In the following, we consider $N$ patients $i = 1, \ldots, N$, each observed for
 
 \subsubsection{Intuition and Riemannian Geometry Background}
 
-A key innovation of Leaspy is the interpretation of disease progression within a Riemannian geometric framework~\cite{schiratti2017bayesian}. As illustrated in Figure~\ref{fig:riemannian-pov}, the model shifts from a purely clinical perspective, where each outcome is considered independently, to a Riemannian perspective, where the joint evolution of multiple outcomes is represented as a trajectory on a product manifold. The core idea is therefore to represent the variability of the disease progression as a Riemannian manifold, where the longitudinal observation $y_{i,j,k}$ are aligned along a single individual trajectory $\gamma_i$ in the latent disease space. 
+A key innovation of Leaspy is the interpretation of disease progression within a Riemannian geometric framework~\cite{schiratti2017bayesian}. As illustrated in Figure~\ref{fig:riemannian-pov}, the model shifts from a purely clinical perspective, where each outcome is considered independently, to a Riemannian perspective, where the joint evolution of multiple outcomes is represented as a trajectory on a product manifold. The core idea is therefore to represent the variability of the disease progression as a Riemannian manifold, where the longitudinal observations $y_{i,j,k}$ are aligned along a single individual trajectory $\gamma_i$ in the latent disease space. 
 
 \begin{figure}
   \centering
@@ -266,7 +266,7 @@ Leaspy provides four main algorithmic operations:
 
 \subsection{Applications and Related Work}
 
-\subsubsection{Applications to Neurodegenerative Diseases}
+%\subsubsection{Applications to Neurodegenerative Diseases}
 
 Leaspy has been applied to several neurodegenerative diseases, demonstrating its generalizability and clinical relevance.
 
@@ -465,47 +465,30 @@ The procedure unfolds in three sequential stages, summarised in Figure~\ref{fig:
 
 If the simulation algorithm correctly implements the joint model structure, and if the estimation procedure is consistent, then the estimated parameters must converge to the true ones as $N$ and $M$ grow. A persistent bias in $\hat{\theta}^{(m)}$, or a low intraclass correlation between estimated and true individual parameters, therefore constitutes evidence of an inconsistency between the generative mechanism and the likelihood, an identifiability failure at the chosen sample size, or a numerical artefact in the optimisation. This makes simulation-based self-consistency the primary instrument for verifying that the joint model not only fits real data but genuinely represents the underlying generative process.
 
-\begin{figure}[htbp] 
+\begin{figure}[H] 
   \centering
   \resizebox{\linewidth}{!}{%
   \begin{tikzpicture}[
-      node distance = 1.4cm and 2.0cm,
-      box/.style    = {rectangle, draw, rounded corners=4pt,
-                       minimum width=3.1cm, minimum height=1.1cm,
-                       align=center, font=\small},
-      arr/.style    = {-{Stealth[length=6pt]}, thick},
-      darr/.style   = {{Stealth[length=5pt]}-{Stealth[length=5pt]},
-                       dashed, thick, color=gray!70},
+      box/.style={rectangle,draw,rounded corners=4pt,minimum width=3.0cm,minimum height=1.05cm,align=center,font=\small},
+      arr/.style={-{Stealth[length=6pt]},thick},
+      darr/.style={{Stealth[length=5pt]}-{Stealth[length=5pt]},dashed,thick,color=gray!75}
     ]
-    \node[box, fill=blue!8]     (ref) {Reference model\\Population parameters $\theta^{*}$};
-            \node[box, fill=orange!12,  right=3.0cm of ref] (sim)
-              {Synthetic cohort $m$\\$(y_{i,j}^{(m)},\; T_{e_i}^{(m)},\; (B^e_i)^{(m)})$};
-    \node[box, fill=green!10,   right=2.8cm of sim] (fit)
-          {Fitted model\\ Population parameters $\hat{\theta}^{(m)}$};
-    \node[box, fill=red!8,      below=1.8cm of fit] (per)
-          {Estimated individual \\ parameters $(\hat{\tau}_i^{(m)},\,\hat{\xi}_i^{(m)}, \dots)$};
-
-    % True individual parameters node
-    \node[box, fill=blue!8,    below=1.8cm of sim] (trueip)
-          {True sampled individual \\ parameters $(\tau_i^{(m)},\,\xi_i^{(m)}, \dots)$};
-
-    % Flow arrows 
-    \draw[arr] (ref)  -- node[above, font=\footnotesize]{simulate} (sim);
-    \draw[{Stealth[length=6pt]}-{Stealth[length=6pt]}, thick] (sim) -- node[above, font=\footnotesize]{fit} (fit);
-    \draw[arr] (fit)  -- node[right, font=\footnotesize]{personalise} (per);
-    \draw[arr] (sim.south) -- node[left, font=\footnotesize]{get $(\tau_i, \xi_i, \dots)$} (trueip); 
-
-    % Comparison arrows
-    \draw[darr] (ref.north east) to[out=30, in=150] node[above, font=\footnotesize, color=black] 
-          {REE, RB, RRMSE, RSE} (fit.north west);
-    \draw[darr] (trueip.east) -- node[below, font=\footnotesize, color=black]
-          {ICC, B-A} (per.west);
-
-    % Repetition brace
-    \draw[decorate, decoration={brace, amplitude=7pt, raise=6pt}]
-          (sim.north west) -- (fit.north east)
-          node[midway, above=15pt, font=\footnotesize\itshape]
-               {repeated $M$ times};
+    \path[use as bounding box] (-2.45,-3.25) rectangle (9.65,2.25);
+    \node[box,fill=blue!8] (ref) at (0,0) {Reference model\\population truth $\theta^*$};
+    \node[box,fill=orange!12] (sim) at (4,0) {Synthetic cohort $m$\\$y$, event time, indicator}; 
+    \node[box,fill=blue!8] (true) at (0,-2.1) {True sampled effects\\$\tau_i,\xi_i,\ldots$};
+    \draw[arr] (ref)--node[left,font=\footnotesize]{simulate (step 1)}(true);
+    \draw[arr] (true)--node[midway,below right,font=\footnotesize]{simulate (steps 2-6)}(sim);
+    \node[box,fill=green!10] (fit) at (8,0) {Fresh fitted model\\$\hat\theta^{(m)}$};
+    \draw[{Stealth[length=6pt]}-{Stealth[length=6pt]},thick] (sim)--node[above,font=\scriptsize]{fit}(fit);
+    \draw[decorate,decoration={brace,amplitude=6pt,raise=15pt}]
+      (sim.north west)--(fit.north east)
+      node[midway,above=13pt,font=\footnotesize\itshape,fill=white,inner sep=1.5pt]{repeat $M$ times};
+    \node[box,fill=red!8] (perso) at (8,-2.1) {Personalised effects\\$\hat\tau_i,\hat\xi_i,\ldots$};
+    \draw[arr] (fit)--node[right,font=\footnotesize]{personalise}(perso);
+    \draw[darr] (ref.north) .. controls +(0,1.75) and +(0,1.75) ..
+      node[pos=0.5,above,font=\footnotesize,color=black]{REE, RB, RRMSE, RSE} (fit.north);
+    \draw[darr] (true)--node[midway,below=5pt,font=\footnotesize,color=black]{ICC, B-A}(perso);
   \end{tikzpicture}}%
   \caption{Simulation-based evaluation pipeline used to assess the self-consistency of the joint model. Starting from a reference model with known population parameters $\theta^{*}$, the simulation algorithm generates a synthetic cohort $m$ containing longitudinal measurements $y_{i,j}^{(m)}$, event times $T_{e_i}^{(m)}$, and censoring indicators $(B_i^e)^{(m)}$, together with the true individual parameters used for generation. A fresh model is fitted to each cohort to obtain $\hat{\theta}^{(m)}$, and is then personalised to recover the individual parameters $(\hat{\tau}_i^{(m)},\hat{\xi}_i^{(m)},\ldots)$. This simulation, fitting, and personalisation procedure is repeated $M$ times. Population-level recovery is evaluated by comparing $\hat{\theta}^{(m)}$ with $\theta^{*}$ using REE, RB, RRMSE, and RSE, while individual-level recovery is evaluated by comparing true and estimated random effects using the ICC and Bland-Altman analysis.}
   \label{fig:eval-principle}
@@ -560,7 +543,7 @@ The {Bland-Altman analysis} provides a graphical complement to the ICC. For each
  
 \subsection{Experimental Setup}
 
-The reference model $\theta^*$ is a multivariate joint model fitted on the PRO-ACT dataset, a pooled and anonymized repository of longitudinal data from completed negative clinical trials in amyotrophic lateral sclerosis (ALS). It is fitted with latent sources of dimension $K = 2$, a single event ($L = 1$) representing death and four longitudinal outcomes ($J=4$) corresponding to the ALSFRS-R sub-scores for bulbar, fine motor, gross motor, and total function. The four longitudinal features are indexed as ($j=0,1,2,3$) and correspond, respectively, to: bulbar function (the sum of speech, salivation, and swallowing items); fine-motor function (handwriting, cutting food/handling utensils, and dressing/hygiene); gross-motor function (turning in bed/adjusting bed clothes, walking, and climbing stairs); and total function, defined as the overall ALSFRS-R score across all items, including the three preceding domains and the respiratory items (dyspnea, orthopnea, and respiratory insufficiency). Accordingly, the product $\mathbf{A}\mathbf{s}_i$ contains $J=4$ feature-level spatial shifts, while the survival component contains $L=1$ survival shift.
+The reference model $\theta^*$ is a multivariate joint model fitted to the PRO-ACT dataset, a pooled and anonymized repository of longitudinal data from completed negative clinical trials in amyotrophic lateral sclerosis (ALS). It is fitted with latent sources of dimension $K = 2$, a single event ($L = 1$) representing death and four longitudinal outcomes ($J=4$) corresponding to the ALSFRS-R sub-scores for bulbar, fine motor, gross motor, and total function. The four longitudinal features are indexed as ($j=0,1,2,3$) and correspond, respectively, to: bulbar function (the sum of speech, salivation, and swallowing items); fine-motor function (handwriting, cutting food/handling utensils, and dressing/hygiene); gross-motor function (turning in bed/adjusting bed clothes, walking, and climbing stairs); and total function, defined as the overall ALSFRS-R score across all items, including the three preceding domains and the respiratory items (dyspnea, orthopnea, and respiratory insufficiency). Accordingly, the product $\mathbf{A}\mathbf{s}_i$ contains $J=4$ feature-level spatial shifts, while the survival component contains $L=1$ survival shift.
 
 The simulation study is carried out in the \textit{random} visit mode with the following study parameters: first-visit offset $\bar{\delta}_f = -2.0$ years and $\sigma_{\delta_f} = 1.0$ year; follow-up duration $\overline{T_f} = 6.0$ years and $\sigma_{T_f} = 2.0$ years; inter-visit interval $\bar{\delta}_v = 0.083$ years and $\sigma_{\delta_v} = 0.042$ years; and a minimum spacing between visits of $0.05$ years. These parameters are deliberately chosen to place each simulated cohort in favourable conditions: the short inter-visit interval and long follow-up produce a dense observation schedule, so that each patient contributes many data points. This abundance of information per individual reduces the number of MCMC-SAEM iterations required to reach convergence both at the fitting and at the personalisation stage.  
 
@@ -624,7 +607,7 @@ Overall, agreement is excellent between the individual effects used to generate 
 
 Recovery accuracy is consistent across the four longitudinal outcomes. The ICC values are $0.987$, $0.989$, $0.990$, and $0.987$ for $w_{i,0}$ to $w_{i,3}$, respectively, with small between-repetition standard deviations. The survival shift $(\boldsymbol{\zeta}^{\top}\mathbf{s}_i)_0$ is the least accurately recovered individual effect, with an ICC of $0.965 \pm 0.027$. This still represents strong agreement. Its comparatively lower precision is consistent with the limited information available for the survival process, since it is inferred from a single possibly censored event time per patient rather than from a sequence of repeated measurements.
 
-\begin{table}[hbtp]
+\begin{table}[H]
 \centering
 \begin{tabular}{lcc}
 \hline
@@ -644,6 +627,8 @@ $(\boldsymbol{\zeta}^\top \mathbf{s}_i)_0$ & $0.965 \pm 0.027$ & $0.978 \pm 0.01
 
 In the scatter plots, one may nevertheless notice a visible concentration of points around estimated values close to zero for some random effects. This pattern could reflect the posterior shrinkage induced by the personalisation step. In finite samples, estimated individual effects are pulled slightly toward the population mean, which is zero for the centred latent effects. This happens especially for individuals with one or a few observations, whose personalisation is less informed by data and more influenced by the prior distribution. This phenomenon does not appear when comparing two personalised quantities, such as the reference model and the $m$-th fitted model, because both undergo the same restriction. Importantly, this visual effect should not be over-interpreted: despite this mild shrinkage, the agreement metrics remain very good, with ICC values above $0.96$ for all individual effects.
 
+The Bland-Altman analysis confirms the absence of substantial systematic error. The mean differences between estimated and true values are close to zero for all effects. The largest mean difference concerns $\tau_i$, at $0.239$ years, which is small relative to the population standard deviation $\sigma_\tau=11.63$ years. For the four feature-level spatial shifts, the biases have absolute values at most $0.0011$, and the limits of agreement remain narrow and centred close to zero. Taken together, these results show that the personalisation procedure reliably recovers the individual temporal, spatial, and survival heterogeneity in the favourable dense observation setting considered here. 
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/Indiv_multivariate.png}
@@ -651,7 +636,7 @@ In the scatter plots, one may nevertheless notice a visible concentration of poi
   \label{fig:param_comparison} 
 \end{figure}
 
-The Bland-Altman analysis confirms the absence of substantial systematic error. The mean differences between estimated and true values are close to zero for all effects. The largest mean difference concerns $\tau_i$, at $0.239$ years, which is small relative to the population standard deviation $\sigma_\tau=11.63$ years. For the four feature-level spatial shifts, the biases have absolute values at most $0.0011$, and the limits of agreement remain narrow and centred close to zero. Taken together, these results show that the personalisation procedure reliably recovers the individual temporal, spatial, and survival heterogeneity in the favourable dense observation setting considered here.
+
 
 \begin{figure}[H]
   \centering
